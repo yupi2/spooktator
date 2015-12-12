@@ -62,12 +62,15 @@ local function PlayerWillBeFancy(plr)
 	return randomChance(chance)
 end
 
+-- Setup each player's fanciness for the round.
 hook.Add("TTTBeginRound", "setup fancy stuff", function()
 	for k,v in ipairs(player.GetAll()) do
 		v:SetFancyGhostState(PlayerWillBeFancy(v))
 	end
 end)
 
+-- Ghost model stuff.
+-- TODO: Make sure it works.
 hook.Add("PlayerSetModel", "Ghost model", function(plr)
 	if plr:GetGhostState() then
 		plr:SetModel("models/UCH/mghost.mdl")
@@ -75,6 +78,7 @@ hook.Add("PlayerSetModel", "Ghost model", function(plr)
 	end
 end)
 
+-- This function sends every player's ghost-state to the plr entity.
 -- If plr is not valid then the batch is sent to all players.
 local function PlayerBatchUpdateGhostState(plr)
 	local plrs = player.GetAll()
@@ -99,6 +103,7 @@ local function PlayerBatchUpdateGhostState(plr)
 	end
 end
 
+-- A player sends this message when their client is ready.
 net.Receive("gimmebatchupdate", function(size, plr)
 	if IsValid(plr) then
 		PlayerBatchUpdateGhostState(plr)
@@ -106,7 +111,8 @@ net.Receive("gimmebatchupdate", function(size, plr)
 	end
 end)
 
--- A hook called before TTTPrepareRound and player spawns.
+-- This hook is called right before players are spawned for the TTTPrepareRound
+-- gamemode function. We can make sure nothing funky happens with it.
 hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 	for k,v in ipairs(player.GetAll()) do
 		-- The second argument (the "true" boolean) disables the
@@ -118,6 +124,8 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 	PlayerBatchUpdateGhostState(nil)
 end)
 
+-- Command for a player to use to change their fanciness.
+-- Also with the possibility to change someone else's with a user-id.
 -- I should probably just use ULib/ULX for this...
 local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 	if not IsValid(plr) then return end
@@ -170,17 +178,15 @@ end
 local function PlayerGhostify(plr)
 	plr:SetRagdollSpec(false)
 	plr:Spectate(OBS_MODE_ROAMING)
-	plr:SpectateEntity(nil)
 	plr:SetGhostState(true)
+	plr:Spawn()
 end
 
 local function PlayerUnGhostify(plr)
 	plr:SetGhostState(false)
 	plr.diedAsGhost = true
-	--plr:Kill()
-	plr:SetRagdollSpec(false)
+	plr:Kill()
 	plr:Spectate(OBS_MODE_ROAMING)
-	plr:SpectateEntity(nil)
 end
 
 local function PlayerToggleGhost(plr)
@@ -209,19 +215,21 @@ hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
 	end
 end)
 
+-- Only players on the terrorist team can suicide so we don't
+-- have to do anything here to prevent it.
 hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
 	if plr:Team() == TEAM_SPEC then
 		PlayerToggleGhost(plr)
 	end
 end)
 
-hook.Add("PlayerSpawn", "playe die thing", function(plr)
-	if not spooktator.cfg.spawn_as_ghost then return end
-
+hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 	if plr.diedAsGhost then
 		plr.diedAsGhost = nil
 		return
 	end
+
+	if not spooktator.cfg.spawn_as_ghost then return end
 
 	if plr:GetInfoNum("spawnasghost", 0) == 1 then
 		PlayerGhostify(plr)

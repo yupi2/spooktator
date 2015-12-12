@@ -17,6 +17,7 @@ hook.Add("TTTSettingsTabs", "Ghost settings menu", function(dtabs)
 	end
 end)
 
+-- ghost visibility changing
 local function PlayerShouldBeDrawn(plr, boolean)
 	--plr:SetNoDraw(not boolean)
 	--plr:DrawShadow(boolean)
@@ -57,6 +58,8 @@ net.Receive("PlayerBatchUpdateGhostState", function()
 	end
 end)
 
+-- Use this hook to inform the client that we're all setup. Using a drawing
+-- hook because it should come later in the cycle and thus less will be broken.
 hook.Add("PreDrawHUD", "gimme update", function()
 	hook.Remove("PreDrawHUD", "gimme update")
 	net.Start("gimmebatchupdate")
@@ -75,6 +78,7 @@ local color_modification = {
 	["$pp_colour_mulb"] = 0
 }
 
+-- Deal with ghost visibility along with doing color and bloom stuff.
 hook.Add("RenderScreenspaceEffects", "Ghost view or something", function()
 	local lp = LocalPlayer()
 	local plrs = player.GetAll()
@@ -106,6 +110,7 @@ hook.Add("RenderScreenspaceEffects", "Ghost view or something", function()
 	end
 end)
 
+-- Adds a bobbing effect to ghosts.
 hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
 	if LocalPlayer():GetGhostState() then
 		local view = {}

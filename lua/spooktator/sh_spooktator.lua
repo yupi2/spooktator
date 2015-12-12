@@ -16,7 +16,10 @@ function PlayerMTbl:SetGhostState(boolean, skip_update)
 	end
 end
 
--- Hook is shared because it might make it look better on the client.
+-- If the player is holding the jump key then they will float upwards.
+-- If the player is not holding their jump key but they are holding their
+-- duck key then they will remain floating at the current height.
+-- The hook is shared so the client doesn't experience jerky movements.
 hook.Add("Move", "Ghost movies", function(plr, mv)
 	if CLIENT and plr ~= LocalPlayer() then return end -- is this possible?
 	if not plr:GetGhostState() then return end
@@ -32,4 +35,24 @@ hook.Add("Move", "Ghost movies", function(plr, mv)
 
 	mv:SetVelocity(vel)
 	return mv
+end)
+
+hook.Add("OnEntityCreated", "Ghost collision check stuff", function(ent)
+	if ent:IsPlayer() then
+		ent:SetCustomCollisionCheck(true)
+-- 	elseif SERVER and ent:IsNPC() then
+-- 		for k,v in pairs(player.GetAll()) do
+-- 			if v:IsGhost() then
+-- 				ent:AddEntityRelationship(v, D_NU, 99)
+-- 			end
+-- 		end
+	end
+end)
+
+hook.Add("ShouldCollide", "Ghost collide", function(ent1, ent2)
+	if not (IsValid(ent1) and IsValid(ent2)) then return end
+
+	if ent1:Team() == TEAM_SPEC or ent2:Team() == TEAM_SPEC then
+		return false
+	end
 end)
