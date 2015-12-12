@@ -23,20 +23,20 @@ local function PlayerShouldBeDrawn(plr, boolean)
 	plr:SetRenderMode(boolean and RENDERMODE_NORMAL or RENDERMODE_NONE)
 end
 
-local function updatePlayerGhostState()
+local function PlayerUpdateGhostState()
 	local plr = net.ReadEntity()
 	local isGhost = net.ReadBool()
 
 	if IsValid(plr) and plr:IsPlayer() then
-		plr:GhostSet(isGhost)
+		plr:SetGhostState(isGhost)
 	end
 end
 
-net.Receive("PlayerGhostUpdate", updatePlayerGhostState)
+net.Receive("PlayerUpdateGhostState", PlayerUpdateGhostState)
 
 -- This net-message is received when the player initially spawns.
 -- It sends every player's ghost state
-net.Receive("PlayerGhostUpdateBatch", function()
+net.Receive("PlayerBatchUpdateGhostState", function()
 	--[[ Net stream
 		uint8_t: number of players in batch
 			255 max players should be fineeee
@@ -47,10 +47,13 @@ net.Receive("PlayerGhostUpdateBatch", function()
 		etc...
 	]]
 
+	-- TODO: Pack entities at the beginning of net-stream with
+	-- the bits/booleans packed together at the end.
+
 	local count = net.ReadUInt(8)
 
 	for i = 0, count do
-		updatePlayerGhostState()
+		PlayerUpdateGhostState()
 	end
 end)
 
@@ -70,7 +73,7 @@ hook.Add("RenderScreenspaceEffects", "Ghost view or something", function()
 	local lp = LocalPlayer()
 	local plrs = player.GetAll()
 
-	if lp:GhostGet() then
+	if lp:GetGhostState() then
 		DrawColorModify(color_modification)
 		DrawBloom(.75,  1,  .65,  .65,  3,  0,  0, (72 / 255), 1)
 	end

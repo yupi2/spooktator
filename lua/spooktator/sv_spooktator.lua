@@ -1,31 +1,29 @@
-util.AddNetworkString("PlayerGhostUpdate")
-util.AddNetworkString("PlayerGhostUpdateBatch")
+util.AddNetworkString("PlayerUpdateGhostState")
+util.AddNetworkString("PlayerBatchUpdateGhostState")
 
 local PlayerMTbl = FindMetaTable("Player")
 
-function PlayerMTbl:GhostFancyGet()
+function PlayerMTbl:GetFancyGhostState()
 	return self.isFancyGhost == true
 end
 
-function PlayerMTbl:GhostFancySet(boolean)
+function PlayerMTbl:SetFancyGhostState(boolean)
 	self.isFancyGhost = boolean
 
-	if self:GhostGet() then
+	if self:GetGhostState() then
 		self:SetBodygroup(1, boolean and 1 or 0)
 	end
 end
 
 hook.Add("PlayerSetModel", "Ghost model", function(plr)
-	if plr:GhostGet() then
+	if plr:GetGhostState() then
 		plr:SetModel("models/UCH/mghost.mdl")
-		plr:SetBodygroup(1, plr:GhostFancyGet() and 1 or 0)
+		plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
 	end
 end)
 
 -- If plr is not valid then the batch is sent to all players.
--- If boolean's type is "boolean" then that is sent as the player's
--- ghost-state instead of using v:GhostGet().
-local function batchUpdatePlayerGhostState(plr, boolean)
+local function PlayerBatchUpdateGhostState(plr,)
 	local plrs = player.GetAll()
 	local count = #plrs
 
@@ -33,19 +31,12 @@ local function batchUpdatePlayerGhostState(plr, boolean)
 		error("what the literal fuck?")
 	end
 
-	net.Start("PlayerGhostUpdateBatch")
+	net.Start("PlayerBatchUpdateGhostState")
 	net.WriteUInt(count, 8)
 
-	if isbool(boolean) then
-		for k,v in ipairs(plrs) do
-			net.WriteEntity(v)
-			net.WriteBool(boolean)
-		end
-	else
-		for k,v in ipairs(plrs) do
-			net.WriteEntity(v)
-			net.WriteBool(v:GhostGet())
-		end
+	for k,v in ipairs(plrs) do
+		net.WriteEntity(v)
+		net.WriteBool(v:GetGhostState())
 	end
 
 	if IsValid(plr) then
@@ -56,7 +47,7 @@ local function batchUpdatePlayerGhostState(plr, boolean)
 end
 
 hook.Add("PlayerInitialSpawn", "Batch update ghosts", function(plr)
-	batchUpdatePlayerGhostState(plr)
+	PlayerBatchUpdateGhostState(plr)
 end)
 
 -- A hook called before TTTPrepareRound and player spawns.
@@ -65,14 +56,14 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 		-- The second argument (the "true" boolean) disables the
 		-- net-message that is done inside of the GhostSet function.
 		-- This is done so we can batch update this shit
-		v:GhostSet(false, true)
+		v:GhostSetState(false, true)
 	end
 
-	batchUpdatePlayerGhostState(nil, false)
+	PlayerBatchUpdateGhostState(nil)
 end)
 
 -- I should probably just use ULib/ULX for this...
-local function PlayerGhostFancyCommand(plr, cmd, argtbl, argstr)
+local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 	if not IsValid(plr) then return end
 
 	if argstr ~= "" then
@@ -92,16 +83,16 @@ local function PlayerGhostFancyCommand(plr, cmd, argtbl, argstr)
 			return
 		end
 
-		tgt:GhostFancySet(not tgt:GhostFancyGet())
+		tgt:SetFancyGhostState(not tgt:GetFancyGhostState())
 		return
 	end
 
-	plr:GhostFancySet(not plr:GhostFancyGet())
+	plr:SetFancyGhostState(not plr:GetFancyGhostState())
 end
 
 if spooktator.cfg.fancy.enable_secret_command == true then
 	local fancycmd = spooktator.cfg.fancy.secret_command
-	concommand.Add(fancycmd, PlayerGhostFancyCommand)
+	concommand.Add(fancycmd, PlayerFancyGhostCommand)
 
 	hook.Add("PlayerSay", "Ghost fancy toggle", function(plr, text, isteam)
 		if text[1] ~= "/" and text[1] ~= "!" then return end
@@ -114,7 +105,7 @@ if spooktator.cfg.fancy.enable_secret_command == true then
 				argstr = string.sub(text, spaceIndex + 1)
 			end
 
-			PlayerGhostFancyCommand(plr, nil, nil, argstr)
+			PlayerFancyGhostCommand(plr, nil, nil, argstr)
 			return ""
 		end
 	end)
@@ -128,10 +119,10 @@ local function PlayerUnGhostify(plr)
 
 end
 
-local function PlayerGhostToggle(plr)
+local function PlayerToggleGhost(plr)
 	if not IsValid(plr) then return end
 
-	if plr:GhostGet() then
+	if plr:GhostGetState() then
 		PlayerUnGhostify(plr)
 	else
 		PlayerGhostify(plr)
@@ -139,7 +130,7 @@ local function PlayerGhostToggle(plr)
 end
 
 for k,v in ipairs(spooktator.cfg.commands) do
-	concommand.Add(v, PlayerGhostToggle, nil, "toggle spooky ghost")
+	concommand.Add(v, PlayerToggleGhost, nil, "toggle spooky ghost")
 end
 
 hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
@@ -147,7 +138,7 @@ hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
 
 	for k,v in ipairs(spooktator.cfg.commands) do
 		if string.find(text, v, 2, true) == 2 then
-			PlayerGhostToggle(plr)
+			PlayerToggleGhost(plr)
 			return ""
 		end
 	end
@@ -155,7 +146,7 @@ end)
 
 hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
 	if plr:Team() == TEAM_SPEC then
-		PlayerGhostToggle(plr)
+		PlayerToggleGhost(plr)
 	end
 end)
 

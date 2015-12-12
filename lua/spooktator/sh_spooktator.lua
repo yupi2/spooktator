@@ -1,24 +1,25 @@
 local PlayerMTbl = FindMetaTable("Player")
 
-function PlayerMTbl:GhostGet()
-	return self.isSpookyGhost == true
+function PlayerMTbl:GetGhostState()
+	return self.isGhost == true
 end
 
-function PlayerMTbl:GhostSet(boolean, skip_update)
-	if self:GhostGet() == boolean then return end
-	self.isSpookyGhost = boolean
+function PlayerMTbl:SetGhostState(boolean, skip_update)
+	if self:GetGhostState() == boolean then return end
+	self.isGhost = boolean
 
 	if SERVER and not skip_update then
-		net.Start("PlayerGhostUpdate")
+		net.Start("PlayerUpdateGhostState")
 			net.WriteEntity(self)
 			net.WriteBool(boolean)
 		net.Broadcast()
 	end
 end
 
+-- Hook is shared because it might make it look better on the client.
 hook.Add("Move", "Ghost movies", function(plr, mv)
 	if CLIENT and plr ~= LocalPlayer() then return end -- is this possible?
-	if not plr:GhostGet() then return end
+	if not plr:GetGhostState() then return end
 
 	local vel = plr:GetVelocity()
 
