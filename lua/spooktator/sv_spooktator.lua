@@ -1,5 +1,6 @@
 util.AddNetworkString("PlayerUpdateGhostState")
 util.AddNetworkString("PlayerBatchUpdateGhostState")
+util.AddNetworkString("gimmebatchupdate")
 
 local clamp = math.Clamp
 
@@ -61,10 +62,6 @@ local function PlayerWillBeFancy(plr)
 	return randomChance(chance)
 end
 
-hook.Add("PlayerInitialSpawn", "setup fancy stuff", function(plr)
-	plr:SetFancyGhostState(PlayerWillBeFancy(plr))
-end)
-
 hook.Add("TTTBeginRound", "setup fancy stuff", function()
 	for k,v in ipairs(player.GetAll()) do
 		v:SetFancyGhostState(PlayerWillBeFancy(v))
@@ -79,7 +76,7 @@ hook.Add("PlayerSetModel", "Ghost model", function(plr)
 end)
 
 -- If plr is not valid then the batch is sent to all players.
-local function PlayerBatchUpdateGhostState(plr,)
+local function PlayerBatchUpdateGhostState(plr)
 	local plrs = player.GetAll()
 	local count = #plrs
 
@@ -102,8 +99,11 @@ local function PlayerBatchUpdateGhostState(plr,)
 	end
 end
 
-hook.Add("PlayerInitialSpawn", "Batch update ghosts", function(plr)
-	PlayerBatchUpdateGhostState(plr)
+net.Receive("gimmebatchupdate", function(size, plr)
+	if IsValid(plr) then
+		PlayerBatchUpdateGhostState(plr)
+		plr:SetFancyGhostState(PlayerWillBeFancy(plr))
+	end
 end)
 
 -- A hook called before TTTPrepareRound and player spawns.
@@ -172,12 +172,12 @@ local function PlayerGhostify(plr)
 	plr:Spectate(OBS_MODE_ROAMING)
 	plr:SpectateEntity(nil)
 	plr:SetGhostState(true)
-	plr:Spawn()
 end
 
 local function PlayerUnGhostify(plr)
 	plr:SetGhostState(false)
-	plr:Kill()
+	plr.diedAsGhost = true
+	--plr:Kill()
 	plr:SetRagdollSpec(false)
 	plr:Spectate(OBS_MODE_ROAMING)
 	plr:SpectateEntity(nil)
@@ -185,6 +185,7 @@ end
 
 local function PlayerToggleGhost(plr)
 	if not IsValid(plr) then return end
+	if plr:Team() ~= TEAM_SPEC then return end
 
 	if plr:GetGhostState() then
 		PlayerUnGhostify(plr)
@@ -214,8 +215,14 @@ hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
 	end
 end)
 
-hook.Add("PostPlayerDeath", "playe die thing", function(plr)
+hook.Add("PlayerSpawn", "playe die thing", function(plr)
 	if not spooktator.cfg.spawn_as_ghost then return end
+
+	if plr.diedAsGhost then
+		plr.diedAsGhost = nil
+		return
+	end
+
 	if plr:GetInfoNum("spawnasghost", 0) == 1 then
 		PlayerGhostify(plr)
 	end

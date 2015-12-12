@@ -1,5 +1,5 @@
-local spawnasghost = CreateClientConvar("spawnasghost", "1", true, true)
-local seeghosts = CreateClientConvar("seeghosts", "1", true, true)
+local spawnasghost = CreateClientConVar("spawnasghost", "1", true, true)
+local seeghosts = CreateClientConVar("seeghosts", "1", true, true)
 
 hook.Add("TTTSettingsTabs", "Ghost settings menu", function(dtabs)
 	local dsettings = dtabs.Items[2].Panel
@@ -57,6 +57,12 @@ net.Receive("PlayerBatchUpdateGhostState", function()
 	end
 end)
 
+hook.Add("PreDrawHUD", "gimme update", function()
+	hook.Remove("PreDrawHUD", "gimme update")
+	net.Start("gimmebatchupdate")
+	net.SendToServer()
+end)
+
 local color_modification = {
 	["$pp_colour_addr"] = 0,
 	["$pp_colour_addg"] = (10 / 255) * 4,
@@ -97,5 +103,19 @@ hook.Add("RenderScreenspaceEffects", "Ghost view or something", function()
 		for k,v in ipairs(plrs) do
 			PlayerShouldBeDrawn(v, true)
 		end
+	end
+end)
+
+hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
+	if LocalPlayer():GetGhostState() then
+		local view = {}
+		local bob = (math.sin((CurTime() * 3)) * 2)
+
+		-- view.origin = Vector(pos.x, pos.y, (pos.z + bob))
+		-- view.angles = ang
+		-- view.fov = fov
+		-- return view
+
+		pos.z = pos.z + bob
 	end
 end)
