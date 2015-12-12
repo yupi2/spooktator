@@ -1,6 +1,8 @@
 util.AddNetworkString("PlayerUpdateGhostState")
 util.AddNetworkString("PlayerBatchUpdateGhostState")
 
+local clamp = math.Clamp
+
 local PlayerMTbl = FindMetaTable("Player")
 
 function PlayerMTbl:GetFancyGhostState()
@@ -14,6 +16,60 @@ function PlayerMTbl:SetFancyGhostState(boolean)
 		self:SetBodygroup(1, boolean and 1 or 0)
 	end
 end
+
+local function getPlayerGroup(plr)
+	-- ULib/ULX thing
+	if plr.GetUserGroup then
+		return plr:GetUserGroup()
+	end
+
+	-- Insert other group stuff here.
+	-- I haven't used anything other than ULib/ULX so I can't be bothered.
+end
+
+local function randomChance(percent)
+	return (clamp(randomChance(ret), 0, 100) >= math.random(1, 100))
+end
+
+local function PlayerGetFancyConfigChance(plr)
+	local chance = spooktator.cfg.fancy.player_chance[plr:SteamID()]
+	if isnumber(chance) then
+		return clamp(chance, 0, 100)
+	end
+
+	chance = spooktator.cfg.fancy.group_chance[getPlayerGroup(plr)]
+	if isnumber(chance) then
+		return clamp(chance, 0, 100)
+	end
+
+	return clamp(spooktator.cfg.fancy.chance, 0, 100)
+end
+
+local function PlayerWillBeFancy(plr)
+	local retPre = hook.Call("PrePlayerFancyChance", nil, plr)
+	if isnumber(retPre) then
+		return randomChance(retPre)
+	end
+
+	local chance = PlayerGetFancyConfigChance(plr)
+
+	local retPost = hook.Call("PostPlayerFancyChance", nil, plr, chance)
+	if isnumber(retPost) then
+		chance = retPost
+	end
+
+	return randomChance(chance)
+end
+
+hook.Add("PlayerInitialSpawn", "setup fancy stuff", function(plr)
+	plr:SetFancyGhostState(PlayerWillBeFancy(plr))
+end)
+
+hook.Add("TTTBeginRound", "setup fancy stuff", function()
+	for k,v in ipairs(player.GetAll()) do
+		v:SetFancyGhostState(PlayerWillBeFancy(v))
+	end
+end)
 
 hook.Add("PlayerSetModel", "Ghost model", function(plr)
 	if plr:GetGhostState() then
@@ -160,7 +216,7 @@ end)
 
 hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 	if not spooktator.cfg.spawn_as_ghost then return end
-	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then return end
-
-	PlayerGhostify(plr)
+	if plr:GetInfoNum("spawnasghost", 0) == 1 then
+		PlayerGhostify(plr)
+	end
 end)

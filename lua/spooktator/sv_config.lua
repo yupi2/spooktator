@@ -1,7 +1,7 @@
 spooktator.cfg = {}
 spooktator.cfg.fancy = {}
 
--- The lowest fancy chance is 0 which disallows that person from fancy.
+-- The lowest fancy chance is 0 which disallows that person from being fancy.
 -- The highest fancy chance is 100 which forces that person to be fancy.
 
 --[[ The player fancy shit is picked as follows:
