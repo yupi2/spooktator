@@ -56,7 +56,7 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 		-- The second argument (the "true" boolean) disables the
 		-- net-message that is done inside of the GhostSet function.
 		-- This is done so we can batch update this shit
-		v:GhostSetState(false, true)
+		v:SetGhostState(false, true)
 	end
 
 	PlayerBatchUpdateGhostState(nil)
@@ -112,17 +112,25 @@ if spooktator.cfg.fancy.enable_secret_command == true then
 end
 
 local function PlayerGhostify(plr)
-
+	plr:SetRagdollSpec(false)
+	plr:Spectate(OBS_MODE_ROAMING)
+	plr:SpectateEntity(nil)
+	plr:SetGhostState(true)
+	plr:Spawn()
 end
 
 local function PlayerUnGhostify(plr)
-
+	plr:SetGhostState(false)
+	plr:Kill()
+	plr:SetRagdollSpec(false)
+	plr:Spectate(OBS_MODE_ROAMING)
+	plr:SpectateEntity(nil)
 end
 
 local function PlayerToggleGhost(plr)
 	if not IsValid(plr) then return end
 
-	if plr:GhostGetState() then
+	if plr:GetGhostState() then
 		PlayerUnGhostify(plr)
 	else
 		PlayerGhostify(plr)
