@@ -1,6 +1,22 @@
 local spawnasghost = CreateClientConvar("spawnasghost", "1", true, true)
 local seeghosts = CreateClientConvar("seeghosts", "1", true, true)
 
+hook.Add("TTTSettingsTabs", "Ghost settings menu", function(dtabs)
+	local dsettings = dtabs.Items[2].Panel
+
+	local dgui = vgui.Create("DForm", dsettings)
+	dgui:SetName("Spooktator stuff")
+	dgui:TTTCustomUI_FormatForm()
+	dgui:CheckBox("Auto spawn as ghost when dead", "spawnasghost")
+	dgui:CheckBox("See other ghosts", "seeghosts")
+	dsettings:AddItem(dgui)
+	for k, v in pairs(dgui.Items) do
+		for i, j in pairs(v:GetChildren()) do
+			j.Label:TTTCustomUI_FormatLabel()
+		end
+	end
+end)
+
 local function PlayerShouldBeDrawn(plr, boolean)
 	--plr:SetNoDraw(not boolean)
 	--plr:DrawShadow(boolean)
@@ -16,9 +32,7 @@ local function updatePlayerGhostState()
 	end
 end
 
-net.Receive("PlayerGhostUpdate", function()
-	updatePlayerGhostState()
-end)
+net.Receive("PlayerGhostUpdate", updatePlayerGhostState)
 
 -- This net-message is received when the player initially spawns.
 -- It sends every player's ghost state

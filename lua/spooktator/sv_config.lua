@@ -41,9 +41,9 @@ spooktator.cfg.fancy.player_chance = {
 -- Give players in a group a different fancy-chance than the default.
 spooktator.cfg.fancy.group_chance = {
 	["owner"] = 100,
-	["dev"] = 69,
-	["superadmin"] = 50,
-	["donor"] = 20,
+	--["dev"] = 69,
+	--["superadmin"] = 69,
+	--["donor"] = 20,
 }
 
 -- secret

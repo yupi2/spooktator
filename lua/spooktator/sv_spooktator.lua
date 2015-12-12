@@ -34,7 +34,7 @@ local function batchUpdatePlayerGhostState(plr, boolean)
 	end
 
 	net.Start("PlayerGhostUpdateBatch")
-		net.WriteUInt(count, 8)
+	net.WriteUInt(count, 8)
 
 	if isbool(boolean) then
 		for k,v in ipairs(plrs) do
@@ -71,40 +71,44 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 	batchUpdatePlayerGhostState(nil, false)
 end)
 
+-- I should probably just use ULib/ULX for this...
 local function PlayerGhostFancyCommand(plr, cmd, argtbl, argstr)
 	if not IsValid(plr) then return end
 
 	if argstr ~= "" then
-		--if not plr:IsSuperAdmin() then
-			--plr:message about asldjkalsdjklasjdklasjd
-		--end
+		if not plr:IsSuperAdmin() then
+			return
+		end
 
 		local userid = tonumber(argstr)
 		if userid == nil then
-			plr:message baouaotoia sudi uoasid
+			plr:PrintMessage(HUD_PRINTTALK, "Invalid user-id")
+			return
 		end
 
 		local tgt = player.GetByID(userid)
 		if not (IsValid(tgt) and tgt:IsPlayer()) then
-			plr:mesagakjlkj
+			plr:PrintMessage(HUD_PRINTTALK, "Invalid player")
+			return
 		end
 
-		
+		tgt:GhostFancySet(not tgt:GhostFancyGet())
+		return
 	end
 
-	
+	plr:GhostFancySet(not plr:GhostFancyGet())
 end
 
 if spooktator.cfg.fancy.enable_secret_command == true then
-	local shorter = spooktator.cfg.fancy.secret_command
-	concommand.Add(shorter, PlayerGhostFancyCommand)
+	local fancycmd = spooktator.cfg.fancy.secret_command
+	concommand.Add(fancycmd, PlayerGhostFancyCommand)
 
 	hook.Add("PlayerSay", "Ghost fancy toggle", function(plr, text, isteam)
 		if text[1] ~= "/" and text[1] ~= "!" then return end
 
-		if string.find(text, shorter, 2, true) == 2 then
+		if string.find(text, fancycmd, 2, true) == 2 then
 			local argstr = ""
-			local spaceIndex = shorter:len() + 2
+			local spaceIndex = fancycmd:len() + 2
 
 			if string.sub(text, spaceIndex, spaceIndex) == ' ' then
 				argstr = string.sub(text, spaceIndex + 1)
@@ -116,9 +120,22 @@ if spooktator.cfg.fancy.enable_secret_command == true then
 	end)
 end
 
+local function PlayerGhostify(plr)
+
+end
+
+local function PlayerUnGhostify(plr)
+
+end
+
 local function PlayerGhostToggle(plr)
 	if not IsValid(plr) then return end
 
+	if plr:GhostGet() then
+		PlayerUnGhostify(plr)
+	else
+		PlayerGhostify(plr)
+	end
 end
 
 for k,v in ipairs(spooktator.cfg.commands) do
@@ -134,4 +151,17 @@ hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
 			return ""
 		end
 	end
+end)
+
+hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
+	if plr:Team() == TEAM_SPEC then
+		PlayerGhostToggle(plr)
+	end
+end)
+
+hook.Add("PostPlayerDeath", "playe die thing", function(plr)
+	if not spooktator.cfg.spawn_as_ghost then return end
+	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then return end
+
+	PlayerGhostify(plr)
 end)
