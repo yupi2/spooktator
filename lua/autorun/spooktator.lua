@@ -11,4 +11,4 @@ else
 	include("spooktator/cl_spooktator.lua")
 end
 
-print("[spooktator] stuff all good")
+ServerLog("[spooktator] stuff all good\n")
