@@ -29,7 +29,7 @@ local function getPlayerGroup(plr)
 end
 
 local function randomChance(percent)
-	return (clamp(randomChance(ret), 0, 100) >= math.random(1, 100))
+	return (clamp(percent, 0, 100) >= math.random(1, 100))
 end
 
 local function PlayerGetFancyConfigChance(plr)
@@ -79,7 +79,7 @@ hook.Add("PlayerSetModel", "Ghost model", function(plr)
 end)
 
 -- This function sends every player's ghost-state to the plr entity.
--- If plr is not valid then the batch is sent to all players.
+-- If plr is not valid then the batch is sent to every player.
 local function PlayerBatchUpdateGhostState(plr)
 	local plrs = player.GetAll()
 	local count = #plrs
@@ -103,7 +103,8 @@ local function PlayerBatchUpdateGhostState(plr)
 	end
 end
 
--- A player sends this message when their client is ready.
+-- A player sends this message when their client isn't
+-- going to break for receiving net-messages.
 net.Receive("gimmebatchupdate", function(size, plr)
 	if IsValid(plr) then
 		PlayerBatchUpdateGhostState(plr)
@@ -111,8 +112,8 @@ net.Receive("gimmebatchupdate", function(size, plr)
 	end
 end)
 
--- This hook is called right before players are spawned for the TTTPrepareRound
--- gamemode function. We can make sure nothing funky happens with it.
+-- This hook is called right before players are spawned in the TTTPrepareRound
+-- gamemode function. We resend ghost-states to fix models or whatever.
 hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 	for k,v in ipairs(player.GetAll()) do
 		-- The second argument (the "true" boolean) disables the

@@ -35,8 +35,8 @@ end
 
 net.Receive("PlayerUpdateGhostState", PlayerUpdateGhostState)
 
--- This net-message is received when the player initially spawns.
--- It sends every player's ghost state
+-- This net-message is received when the player's game
+-- won't break from being sent net-messages.
 net.Receive("PlayerBatchUpdateGhostState", function()
 	--[[ Net stream
 		uint8_t: number of players in batch
@@ -58,7 +58,7 @@ net.Receive("PlayerBatchUpdateGhostState", function()
 	end
 end)
 
--- Use this hook to inform the client that we're all setup. Using a drawing
+-- Use this hook to inform the server that we're all setup. Using a drawing
 -- hook because it should come later in the cycle and thus less will be broken.
 hook.Add("PreDrawHUD", "gimme update", function()
 	hook.Remove("PreDrawHUD", "gimme update")
