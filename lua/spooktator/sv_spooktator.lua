@@ -231,8 +231,40 @@ hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 	end
 
 	if not spooktator.cfg.spawn_as_ghost then return end
+	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then return end
 
-	if plr:GetInfoNum("spawnasghost", 0) == 1 then
+	local state = GetRoundState()
+	if state == ROUND_ACTIVE or state == ROUND_POST then
 		PlayerGhostify(plr)
+	end
+end)
+
+local deathbadgehook = util.noop
+local function dbhReplacement(vic, att, dmg)
+	if vic.diedAsGhost then return end
+	deathbadgehook(vic, att, dmg)
+end
+
+local killcamhook = util.noop
+local function kchReplacement(vic, att, dmg)
+	if vic.diedAsGhost then return end
+	killcamhook(vic, att, dmg)
+end
+
+-- We overwrite some other addon's hooks so they don't
+-- execute if the player used their kill bind to toggle ghost.
+timer.Create("player death things", 1, 1, function()
+	local tbl = hook.GetTable()
+	local dpd = tbl["DoPlayerDeath"]
+	if dpd then
+		deathbadgehook = dpd["DMSG.SV"]
+		if deathbadgehook then
+			hook.Add("DoPlayerDeath", "DMSG.SV", dbhReplacement)
+		end
+
+		killcamhook = dpd["WKC_SendKillCamData"]
+		if killcamhook then
+			hook.Add("DoPlayerDeath", "WKC_SendKillCamData", kchReplacement)
+		end
 	end
 end)

@@ -3,16 +3,22 @@ local seeghosts = CreateClientConVar("seeghosts", "1", true, true)
 
 hook.Add("TTTSettingsTabs", "Ghost settings menu", function(dtabs)
 	local dsettings = dtabs.Items[2].Panel
-
 	local dgui = vgui.Create("DForm", dsettings)
 	dgui:SetName("Spooktator stuff")
-	dgui:TTTCustomUI_FormatForm()
+
+	if tttCustomSettings then
+		dgui:TTTCustomUI_FormatForm()
+	end
+
 	dgui:CheckBox("Auto spawn as ghost when dead", "spawnasghost")
 	dgui:CheckBox("See other ghosts", "seeghosts")
 	dsettings:AddItem(dgui)
-	for k, v in pairs(dgui.Items) do
-		for i, j in pairs(v:GetChildren()) do
-			j.Label:TTTCustomUI_FormatLabel()
+
+	if tttCustomSettings then
+		for k, v in pairs(dgui.Items) do
+			for i, j in pairs(v:GetChildren()) do
+				j.Label:TTTCustomUI_FormatLabel()
+			end
 		end
 	end
 end)
@@ -62,8 +68,10 @@ end)
 -- hook because it should come later in the cycle and thus less will be broken.
 hook.Add("PreDrawHUD", "gimme update", function()
 	hook.Remove("PreDrawHUD", "gimme update")
-	net.Start("gimmebatchupdate")
-	net.SendToServer()
+	--timer.Simple(1, function()
+		net.Start("gimmebatchupdate")
+		net.SendToServer()
+	--end)
 end)
 
 local color_modification = {
@@ -101,26 +109,43 @@ hook.Add("RenderScreenspaceEffects", "Ghost view or something", function()
 	if ((lp:Team() == TEAM_TERROR) and (GetRoundState() ~= ROUND_POST)) or
 			(seeghosts:GetInt() ~= 1) then
 		for k,v in ipairs(plrs) do
-			PlayerShouldBeDrawn(v, (v:Team() == TEAM_TERROR))
+			if v ~= lp then
+				PlayerShouldBeDrawn(v, (v:Team() == TEAM_TERROR))
+			end
 		end
 	else
 		for k,v in ipairs(plrs) do
-			PlayerShouldBeDrawn(v, true)
+			if v ~= lp then
+				PlayerShouldBeDrawn(v, true)
+			end
 		end
+	end
+end)
+
+hook.Add("ShouldDrawLocalPlayer", "Draw me", function(plr)
+	if plr:GetGhostState() then
+		return true
 	end
 end)
 
 -- Adds a bobbing effect to ghosts.
 hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
 	if LocalPlayer():GetGhostState() then
-		local view = {}
-		local bob = (math.sin((CurTime() * 3)) * 2)
-
-		-- view.origin = Vector(pos.x, pos.y, (pos.z + bob))
-		-- view.angles = ang
-		-- view.fov = fov
-		-- return view
-
-		pos.z = pos.z + bob
+		pos.z = pos.z + (math.sin((CurTime() * 3)) * 2)
 	end
+end)
+
+local old_HUDDrawTargetID = util.noop
+local function new_HUDDrawTargetID(self)
+	local trace = LocalPlayer():GetEyeTrace(MASK_SHOT)
+	local ent = trace.Entity
+
+	if not (IsValid(ent) and ent:IsPlayer()) then return end
+	if ent:Team() == TEAM_SPEC then return end
+
+	old_HUDDrawTargetID(self)
+end
+
+hook.Add("Initialize", "Initialize cuk", function()
+	GAMEMODE.HUDDrawTargetID = new_HUDDrawTargetID
 end)

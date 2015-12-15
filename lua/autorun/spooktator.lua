@@ -10,5 +10,3 @@ if SERVER then
 else
 	include("spooktator/cl_spooktator.lua")
 end
-
-ServerLog("[spooktator] stuff all good\n")
