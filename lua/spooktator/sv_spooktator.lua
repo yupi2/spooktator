@@ -255,9 +255,8 @@ end
 
 -- We overwrite some other addon's hooks so they don't
 -- execute if the player used their kill bind to toggle ghost.
-timer.Create("player death things", 1, 1, function()
-	local tbl = hook.GetTable()
-	local dpd = tbl["DoPlayerDeath"]
+hook.Add("Initialize", "player death things", function()
+	local dpd = hook.GetTable()["DoPlayerDeath"]
 	if dpd then
 		deathbadgehook = dpd["DMSG.SV"]
 		if deathbadgehook then
