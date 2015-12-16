@@ -18,6 +18,30 @@ function PlayerMTbl:SetFancyGhostState(boolean)
 	end
 end
 
+function PlayerMTbl:Ghostify()
+	self:SetRagdollSpec(false)
+	--self:Spectate(OBS_MODE_ROAMING)
+	self:SetGhostState(true)
+	self:Spawn()
+end
+
+function PlayerMTbl:UnGhostify()
+	self:SetGhostState(false)
+	self.diedAsGhost = true
+	self:Kill()
+	--self:Spectate(OBS_MODE_ROAMING)
+end
+
+function PlayerMTbl:ToggleGhost()
+	if self:Team() ~= TEAM_SPEC then return end
+
+	if self:GetGhostState() then
+		self:Ghostify()
+	else
+		self:UnGhostify()
+	end
+end
+
 local function getPlayerGroup(plr)
 	-- ULib/ULX thing
 	if plr.GetUserGroup then
@@ -28,38 +52,21 @@ local function getPlayerGroup(plr)
 	-- I haven't used anything other than ULib/ULX so I can't be bothered.
 end
 
-local function randomChance(percent)
+local function maybe(percent)
 	return (clamp(percent, 0, 100) >= math.random(1, 100))
 end
 
-local function PlayerGetFancyConfigChance(plr)
-	local chance = spooktator.cfg.fancy.player_chance[plr:SteamID()]
-	if isnumber(chance) then
-		return clamp(chance, 0, 100)
-	end
-
-	chance = spooktator.cfg.fancy.group_chance[getPlayerGroup(plr)]
-	if isnumber(chance) then
-		return clamp(chance, 0, 100)
-	end
-
-	return clamp(spooktator.cfg.fancy.chance, 0, 100)
-end
-
 local function PlayerWillBeFancy(plr)
-	local retPre = hook.Call("PrePlayerFancyChance", nil, plr)
-	if isnumber(retPre) then
-		return randomChance(retPre)
+	local chance = spooktator.cfg.fancy.player_chance[plr:SteamID()]
+
+	if not isnumber(chance) then
+		chance = spooktator.cfg.fancy.group_chance[getPlayerGroup(plr)]
+		if not isnumber(chance) then
+			chance = spooktator.cfg.fancy.chance
+		end
 	end
 
-	local chance = PlayerGetFancyConfigChance(plr)
-
-	local retPost = hook.Call("PostPlayerFancyChance", nil, plr, chance)
-	if isnumber(retPost) then
-		chance = retPost
-	end
-
-	return randomChance(chance)
+	return maybe(chance)
 end
 
 -- Setup each player's fanciness for the round.
@@ -126,8 +133,8 @@ end)
 hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 	for k,v in ipairs(player.GetAll()) do
 		-- The second argument (the "true" boolean) disables the
-		-- net-message that is done inside of the GhostSet function.
-		-- This is done so we can batch update this shit
+		-- net-message that is done inside of the SetGhostState function.
+		-- This is done so we can batch update this shit.
 		v:SetGhostState(false, true)
 	end
 
@@ -185,33 +192,8 @@ if spooktator.cfg.fancy.enable_secret_command == true then
 	end)
 end
 
-local function PlayerGhostify(plr)
-	plr:SetRagdollSpec(false)
-	plr:Spectate(OBS_MODE_ROAMING)
-	plr:SetGhostState(true)
-	plr:Spawn()
-end
-
-local function PlayerUnGhostify(plr)
-	plr:SetGhostState(false)
-	plr.diedAsGhost = true
-	plr:Kill()
-	plr:Spectate(OBS_MODE_ROAMING)
-end
-
-local function PlayerToggleGhost(plr)
-	if not IsValid(plr) then return end
-	if plr:Team() ~= TEAM_SPEC then return end
-
-	if plr:GetGhostState() then
-		PlayerUnGhostify(plr)
-	else
-		PlayerGhostify(plr)
-	end
-end
-
 for k,v in ipairs(spooktator.cfg.commands) do
-	concommand.Add(v, PlayerToggleGhost, nil, "toggle spooky ghost")
+	concommand.Add(v, PlayerMTbl.ToggleGhost, nil, "toggle spooky ghost")
 end
 
 hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
@@ -219,7 +201,7 @@ hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
 
 	for k,v in ipairs(spooktator.cfg.commands) do
 		if string.find(text, v, 2, true) == 2 then
-			PlayerToggleGhost(plr)
+			plr:ToggleGhost()
 			return ""
 		end
 	end
@@ -229,7 +211,7 @@ end)
 -- have to do anything here to prevent it.
 hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
 	if plr:Team() == TEAM_SPEC then
-		PlayerToggleGhost(plr)
+		plr:ToggleGhost()
 	end
 end)
 
@@ -244,7 +226,7 @@ hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 
 	local state = GetRoundState()
 	if state == ROUND_ACTIVE or state == ROUND_POST then
-		PlayerGhostify(plr)
+		plr:Ghostify()
 	end
 end)
 
