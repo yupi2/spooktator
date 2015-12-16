@@ -158,7 +158,14 @@ local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 			return
 		end
 
-		local tgt = player.GetByID(userid)
+		local tgt = nil
+		for k,v in ipairs(player.GetAll()) do
+			if v:UserID() == userid then
+				tgt = v
+				break
+			end
+		end
+
 		if not (IsValid(tgt) and tgt:IsPlayer()) then
 			plr:PrintMessage(HUD_PRINTTALK, "Invalid player")
 			return
@@ -179,14 +186,18 @@ if spooktator.cfg.fancy.enable_secret_command == true then
 		if text[1] ~= "/" and text[1] ~= "!" then return end
 
 		if string.find(text, fancycmd, 2, true) == 2 then
-			local argstr = ""
-			local spaceIndex = fancycmd:len() + 2
+			local userid = ""
+			-- "ohyaknow 13"
+			--           ^^--- example userid we'll try to clip out
+			--          ^--- the location spaceIndex points to
+			--  ^^^^^^^^--- the fancycmd
+			local spaceIndex = fancycmd:len() + 1
 
 			if string.sub(text, spaceIndex, spaceIndex) == ' ' then
-				argstr = string.sub(text, spaceIndex + 1)
+				userid = string.sub(text, spaceIndex + 1)
 			end
 
-			PlayerFancyGhostCommand(plr, nil, nil, argstr)
+			PlayerFancyGhostCommand(plr, nil, nil, userid)
 			return ""
 		end
 	end)
