@@ -78,6 +78,15 @@ hook.Add("PlayerSetModel", "Ghost model", function(plr)
 	end
 end)
 
+hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
+	if plr:GetGhostState() then
+		plr:UnSpectate()
+		hook.Call("PlayerSetModel", GAMEMODE, plr)
+	--else
+	--	plr:SetBloodColor(0)
+	end
+end)
+
 -- This function sends every player's ghost-state to the plr entity.
 -- If plr is not valid then the batch is sent to every player.
 local function PlayerBatchUpdateGhostState(plr)

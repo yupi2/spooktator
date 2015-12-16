@@ -55,3 +55,13 @@ hook.Add("ShouldCollide", "Ghost collide", function(ent1, ent2)
 		return false
 	end
 end)
+
+-- local function luastuff(plr, cmd, argtbl, argstr)
+	-- RunString(argstr)
+-- end
+
+-- if SERVER then
+	-- concommand.Add("svl", luastuff)
+-- else
+	-- concommand.Add("cll", luastuff)
+-- end

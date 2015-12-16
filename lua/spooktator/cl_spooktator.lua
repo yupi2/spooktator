@@ -86,15 +86,18 @@ local color_modification = {
 	["$pp_colour_mulb"] = 0
 }
 
--- Deal with ghost visibility along with doing color and bloom stuff.
+-- Deal with doing color and bloom stuff.
 hook.Add("RenderScreenspaceEffects", "Ghost view or something", function()
-	local lp = LocalPlayer()
-	local plrs = player.GetAll()
-
-	if lp:GetGhostState() then
+	if LocalPlayer():GetGhostState() then
 		DrawColorModify(color_modification)
 		DrawBloom(.75,  1,  .65,  .65,  3,  0,  0, (72 / 255), 1)
 	end
+end)
+
+hook.Add("Think", "Ghost view 2 or something", function()
+	local lp = LocalPlayer()
+	if not IsValid(lp) then return end
+	local plrs = player.GetAll()
 
 	--[[ How a ghost is decided to be drawn:
 		If any of the conditions (read from top to bottom) in this comment
@@ -147,5 +150,6 @@ local function new_HUDDrawTargetID(self)
 end
 
 hook.Add("Initialize", "Initialize cuk", function()
+	old_HUDDrawTargetID = GAMEMODE.HUDDrawTargetID
 	GAMEMODE.HUDDrawTargetID = new_HUDDrawTargetID
 end)
