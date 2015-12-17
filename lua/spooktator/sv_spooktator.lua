@@ -36,9 +36,9 @@ function PlayerMTbl:ToggleGhost()
 	if self:Team() ~= TEAM_SPEC then return end
 
 	if self:GetGhostState() then
-		self:Ghostify()
-	else
 		self:UnGhostify()
+	else
+		self:Ghostify()
 	end
 end
 
