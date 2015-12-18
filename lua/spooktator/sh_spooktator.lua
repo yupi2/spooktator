@@ -22,6 +22,7 @@ end
 -- The hook is shared so the client doesn't experience jerky movements.
 hook.Add("Move", "Ghost movies", function(plr, mv)
 	if CLIENT and plr ~= LocalPlayer() then return end -- is this possible?
+	if plr:Team() == TEAM_TERROR then return end
 	if not plr:GetGhostState() then return end
 
 	local vel = plr:GetVelocity()
@@ -55,13 +56,3 @@ hook.Add("ShouldCollide", "Ghost collide", function(ent1, ent2)
 		return false
 	end
 end)
-
--- local function luastuff(plr, cmd, argtbl, argstr)
-	-- RunString(argstr)
--- end
-
--- if SERVER then
-	-- concommand.Add("svl", luastuff)
--- else
-	-- concommand.Add("cll", luastuff)
--- end

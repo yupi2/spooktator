@@ -19,6 +19,7 @@ function PlayerMTbl:SetFancyGhostState(boolean)
 end
 
 function PlayerMTbl:Ghostify()
+	if self:GetGhostState() then return end
 	self:SetRagdollSpec(false)
 	--self:Spectate(OBS_MODE_ROAMING)
 	self:SetGhostState(true)
@@ -26,6 +27,7 @@ function PlayerMTbl:Ghostify()
 end
 
 function PlayerMTbl:UnGhostify()
+	if not self:GetGhostState() then return end
 	self:SetGhostState(false)
 	self.diedAsGhost = true
 	self:Kill()
@@ -94,6 +96,12 @@ hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 	end
 end)
 
+hook.Add("EntityTakeDamage", "ghostie ghost", function(ent, dmg)
+	if ent:IsPlayer() and ent:GetGhostState() then
+		return true -- block damage
+	end
+end)
+
 -- This function sends every player's ghost-state to the plr entity.
 -- If plr is not valid then the batch is sent to every player.
 local function PlayerBatchUpdateGhostState(plr)
@@ -158,14 +166,7 @@ local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 			return
 		end
 
-		local tgt = nil
-		for k,v in ipairs(player.GetAll()) do
-			if v:UserID() == userid then
-				tgt = v
-				break
-			end
-		end
-
+		local tgt = Player(userid)
 		if not (IsValid(tgt) and tgt:IsPlayer()) then
 			plr:PrintMessage(HUD_PRINTTALK, "Invalid player")
 			return
@@ -253,6 +254,16 @@ local function kchReplacement(vic, att, dmg)
 	killcamhook(vic, att, dmg)
 end
 
+local old_KeyPress = util.noop
+local old_SpectatorThink = util.noop
+local old_PlayerCanPickupWeapon = util.noop
+local old_SpawnForRound = util.noop
+local old_ResetRoundFlags = util.noop
+local old_spectate = util.noop
+--local old_ShouldSpawn = util.noop
+local old_GiveLoadout = util.noop
+local old_KarmaHurt = util.noop
+
 -- We overwrite some other addon's hooks so they don't
 -- execute if the player used their kill bind to toggle ghost.
 hook.Add("Initialize", "player death things", function()
@@ -267,5 +278,65 @@ hook.Add("Initialize", "player death things", function()
 		if killcamhook then
 			hook.Add("DoPlayerDeath", "WKC_SendKillCamData", kchReplacement)
 		end
+	end
+
+	old_KeyPress = GAMEMODE.KeyPress
+	function GAMEMODE:KeyPress(plr, key)
+		if IsValid(plr) and plr:GetGhostState() then return end
+		return old_KeyPress(self, plr, key)
+	end
+
+	old_SpectatorThink = GAMEMODE.SpectatorThink
+	function GAMEMODE:SpectatorThink(plr)
+		if IsValid(plr) and plr:GetGhostState() then return true end
+		old_SpectatorThink(self, plr)
+	end
+
+	old_PlayerCanPickupWeapon = GAMEMODE.PlayerCanPickupWeapon
+	function GAMEMODE:PlayerCanPickupWeapon(plr, wep)
+		if not IsValid(plr) or not IsValid(wep) then return end
+		if plr:GetGhostState() then return end
+		return old_PlayerCanPickupWeapon(self, plr, wep)
+	end
+
+	old_SpawnForRound = PlayerMTbl.SpawnForRound
+	function PlayerMTbl:SpawnForRound(dead_only)
+		if self:GetGhostState() then
+			self:SetGhostState(false)
+		end
+		return old_SpawnForRound(self, dead_only)
+	end
+
+	old_ResetRoundFlags = PlayerMTbl.ResetRoundFlags
+	function PlayerMTbl:ResetRoundFlags()
+		if self:GetGhostState() then return end
+		old_ResetRoundFlags(self)
+	end
+
+	old_spectate = PlayerMTbl.Spectate
+	function PlayerMTbl:Spectate(mode)
+		if self:GetGhostState() then return end
+		return old_spectate(self, mode)
+	end
+
+	-- old_ShouldSpawn = PlayerMTbl.ShouldSpawn
+	-- function PlayerMTbl:ShouldSpawn()
+		-- if self:GetGhostState() then return true end
+		-- return old_ShouldSpawn(self)
+	-- end
+
+	old_GiveLoadout = GAMEMODE.PlayerLoadout
+	function GAMEMODE:PlayerLoadout(plr)
+		if plr:GetGhostState() then return end
+		old_GiveLoadout(self, plr)
+	end
+
+	old_KarmaHurt = KARMA.Hurt
+	function KARMA.Hurt(attacker, victim, dmginfo)
+		if not (IsValid(attacker) and IsValid(victim)) then return end
+		if attacker == victim then return end
+		if not (attacker:IsPlayer() and victim:IsPlayer()) then return end
+		if attacker:GetGhostState() or victim:GetGhostState() then return end
+		return old_KarmaHurt(attacker, victim, dmginfo)
 	end
 end)

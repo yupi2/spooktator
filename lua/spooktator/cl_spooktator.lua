@@ -125,12 +125,6 @@ hook.Add("Think", "Ghost view 2 or something", function()
 	end
 end)
 
-hook.Add("ShouldDrawLocalPlayer", "Draw me", function(plr)
-	if plr:GetGhostState() then
-		return true
-	end
-end)
-
 -- Adds a bobbing effect to ghosts.
 hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
 	if LocalPlayer():GetGhostState() then

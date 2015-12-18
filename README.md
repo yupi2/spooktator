@@ -6,6 +6,6 @@ An unfinished combination of the ghosts from
 
 https://github.com/raphy963/Ultimate-Chimera-Hunt
 
-and the spectator stuff from (mostly just reference)
+and the spectator stuff from
 
 https://github.com/Tommy228/TTT_Spectator_Deathmatch
