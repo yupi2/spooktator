@@ -340,3 +340,20 @@ hook.Add("Initialize", "player death things", function()
 		return old_KarmaHurt(attacker, victim, dmginfo)
 	end
 end)
+
+-- too many damn scripts override this function on Initialize
+-- so I had the idea of putting this here
+hook.Add("TTTBeginRound", "TTTBeginRound_Ghost", function()
+	local old_haste = HasteMode
+	local old_PlayerDeath = GAMEMODE.PlayerDeath
+	function GAMEMODE:PlayerDeath(ply, infl, attacker)
+		if ply:GetGhostState() then
+			HasteMode = function()
+				return false
+			end
+		end
+		old_PlayerDeath(self, ply, infl, attacker)
+		HasteMode = old_haste
+	end
+	hook.Remove("TTTBeginRound", "TTTBeginRound_Ghost")
+end)

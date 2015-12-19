@@ -265,4 +265,37 @@ hook.Add("Initialize", "Initialize cuk", function()
 			return true
 		end
 	end
+
+	-- function ScoreGroup(p)
+		-- if not IsValid(p) then return -1 end 
+		-- local client = LocalPlayer()
+		-- if p:IsGhost()  then
+			-- if not p:GetNWBool("PlayedSRound") then return GROUP_SPEC end
+			-- if p:GetNWBool("body_found", false) then
+				-- return GROUP_FOUND
+			-- else
+				-- local client = LocalPlayer()
+				-- if client:IsSpec() or client:IsActiveTraitor() or ((GAMEMODE.round_state != ROUND_ACTIVE) and client:IsTerror()) then
+					-- return GROUP_NOTFOUND
+				-- else
+					-- return GROUP_TERROR
+				-- end
+			-- end	   
+		-- end
+		-- if DetectiveMode() then
+			-- if p:IsSpec() and p:GetNWBool("PlayedSRound") and not p:Alive() then
+				-- if p:GetNWBool("body_found", false) then
+					-- return GROUP_FOUND
+				-- else
+					-- local client = LocalPlayer()
+					-- if client:IsSpec() or client:IsActiveTraitor() or ((GAMEMODE.round_state ~= ROUND_ACTIVE) and client:IsTerror()) then
+						-- return GROUP_NOTFOUND
+					-- else
+						-- return GROUP_TERROR
+					-- end
+				-- end
+			-- end
+		-- end
+		-- return p:IsTerror() and GROUP_TERROR or GROUP_SPEC
+	-- end
 end)
