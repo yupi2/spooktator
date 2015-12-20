@@ -263,6 +263,7 @@ local old_spectate = util.noop
 --local old_ShouldSpawn = util.noop
 local old_GiveLoadout = util.noop
 local old_KarmaHurt = util.noop
+local old_BeginRound = util.noop
 
 -- We overwrite some other addon's hooks so they don't
 -- execute if the player used their kill bind to toggle ghost.
@@ -338,6 +339,18 @@ hook.Add("Initialize", "player death things", function()
 		if not (attacker:IsPlayer() and victim:IsPlayer()) then return end
 		if attacker:GetGhostState() or victim:GetGhostState() then return end
 		return old_KarmaHurt(attacker, victim, dmginfo)
+	end
+
+	old_BeginRound = BeginRound
+	function BeginRound()
+		old_BeginRound()
+		for k,v in ipairs(player.GetAll()) do
+			if v:Alive() and not v:GetGhostState() then
+				v:SetNWBool("playedfuckboiround", true)
+			else
+				v:SetNWBool("playedfuckboiround", false)
+			end
+		end
 	end
 end)
 
