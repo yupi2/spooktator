@@ -16,6 +16,29 @@ function PlayerMTbl:SetGhostState(boolean, skip_update)
 	end
 end
 
+hook.Add("Initialize", "gimme your funicies", function()
+	local function tracething(f, TraceData)
+		local tr = f(TraceData)
+		local ent = tr.Entity
+
+		if IsValid(ent) and ent:IsPlayer() and ent:GetGhostState() then
+			return {}
+		end
+
+		return tr
+	end
+
+	util.origTraceLine = util.TraceLine
+	util.TraceLine = function(TraceData)
+		return tracething(util.origTraceLine, TraceData)
+	end
+
+	util.origTraceHull = util.TraceHull
+	util.TraceHull = function(TraceData)
+		return tracething(util.origTraceHull, TraceData)
+	end
+end)
+
 -- If the player is holding the jump key then they will float upwards.
 -- If the player is not holding their jump key but they are holding their
 -- duck key then they will remain floating at the current height.
@@ -54,5 +77,11 @@ hook.Add("ShouldCollide", "Ghost collide", function(ent1, ent2)
 	if not (IsValid(ent1) and IsValid(ent2)) then return end
 	if (ent1.Team and ent1:Team() == TEAM_SPEC) or (ent2.Team and ent2:Team() == TEAM_SPEC) then
 		return false
+	end
+end)
+
+hook.Add("PlayerFootstep", "no steppies", function(plr)
+	if plr:Team() == TEAM_SPEC then
+		return true -- mutes the steppies
 	end
 end)

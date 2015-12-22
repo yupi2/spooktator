@@ -24,10 +24,12 @@ function PlayerMTbl:Ghostify()
 	--self:Spectate(OBS_MODE_ROAMING)
 	self:SetGhostState(true)
 	self:Spawn()
+	self:SetNotSolid(true)
 end
 
 function PlayerMTbl:UnGhostify()
 	if not self:GetGhostState() then return end
+	self:SetNotSolid(false)
 	self:SetGhostState(false)
 	self.diedAsGhost = true
 	self:Kill()
@@ -71,6 +73,12 @@ local function PlayerWillBeFancy(plr)
 	return maybe(chance)
 end
 
+hook.Add("OnPlayerHitGround", "no fallz", function(plr)
+	if plr:GetGhostState() then
+		return true --block falliez
+	end
+end)
+
 -- Setup each player's fanciness for the round.
 hook.Add("TTTBeginRound", "setup fancy stuff", function()
 	for k,v in ipairs(player.GetAll()) do
@@ -89,8 +97,13 @@ end)
 
 hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 	if plr:GetGhostState() then
-		plr:UnSpectate()
-		hook.Call("PlayerSetModel", GAMEMODE, plr)
+		--plr:UnSpectate()
+		timer.Simple(1, function()
+			if IsValid(plr) and plr:IsPlayer() and plr:GetGhostState() then
+				hook.Call("PlayerSetModel", nil, plr)
+			end
+		end)
+		--hook.Call("PlayerSetModel", GAMEMODE, plr)
 	--else
 	--	plr:SetBloodColor(0)
 	end
@@ -242,28 +255,30 @@ hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 	end
 end)
 
-local deathbadgehook = util.noop
+local noop = util.noop
+
+local deathbadgehook = noop
 local function dbhReplacement(vic, att, dmg)
 	if vic.diedAsGhost then return end
 	deathbadgehook(vic, att, dmg)
 end
 
-local killcamhook = util.noop
+local killcamhook = noop
 local function kchReplacement(vic, att, dmg)
 	if vic.diedAsGhost then return end
 	killcamhook(vic, att, dmg)
 end
 
-local old_KeyPress = util.noop
-local old_SpectatorThink = util.noop
-local old_PlayerCanPickupWeapon = util.noop
-local old_SpawnForRound = util.noop
-local old_ResetRoundFlags = util.noop
-local old_spectate = util.noop
---local old_ShouldSpawn = util.noop
-local old_GiveLoadout = util.noop
-local old_KarmaHurt = util.noop
-local old_BeginRound = util.noop
+local old_KeyPress = noop
+local old_SpectatorThink = noop
+local old_PlayerCanPickupWeapon = noop
+local old_SpawnForRound = noop
+local old_ResetRoundFlags = noop
+local old_spectate = noop
+--local old_ShouldSpawn = noop
+local old_GiveLoadout = noop
+local old_KarmaHurt = noop
+local old_BeginRound = noop
 
 -- We overwrite some other addon's hooks so they don't
 -- execute if the player used their kill bind to toggle ghost.
