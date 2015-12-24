@@ -86,6 +86,21 @@ hook.Add("TTTBeginRound", "setup fancy stuff", function()
 	end
 end)
 
+-- local ghostHullMin = Vector(-16, -16, 0)
+-- local ghostHullMax = Vector(16, 16, 55)
+-- local ghostViewOffset = Vector(0, 0, 55)
+-- local function updateHulls(plr)
+	-- if plr:GetGhostState() then
+		-- plr:SetHull(ghostHullMin, ghostHullMax)
+		-- plr:SetHullDuck(ghostHullMin, Vector(16, 16, 55))
+
+		-- --plr:SetViewOffset(ghostViewOffset)
+		-- --plr:SetViewOffsetDucked(ghostViewOffset)
+	-- else
+		-- plr:ResetHull()
+	-- end
+-- end
+
 local function ghostModelStuff(plr)
 	plr:SetModel("models/UCH/mghost.mdl")
 	plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
@@ -93,12 +108,15 @@ end
 
 hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 	if plr:GetGhostState() then
+		plr:UnSpectate()
 		timer.Simple(1, function()
 			if IsValid(plr) and plr:IsPlayer() and plr:GetGhostState() then
 				ghostModelStuff(plr)
 			end
 		end)
 	end
+
+	-- updateHulls(plr)
 end)
 
 hook.Add("EntityTakeDamage", "ghostie ghost", function(ent, dmg)
@@ -232,17 +250,22 @@ hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
 	end
 end)
 
+local function shouldSpawnAsGhost(plr)
+	if plr.diedAsGhost then return false end
+	if not spooktator.cfg.spawn_as_ghost then return false end
+	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then return false end
+
+	local state = GetRoundState()
+	return (state == ROUND_ACTIVE or state == ROUND_POST)
+end
+
 hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 	if plr.diedAsGhost then
 		plr.diedAsGhost = nil
 		return
 	end
 
-	if not spooktator.cfg.spawn_as_ghost then return end
-	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then return end
-
-	local state = GetRoundState()
-	if state == ROUND_ACTIVE or state == ROUND_POST then
+	if shouldSpawnAsGhost(plr) then
 		plr:Ghostify()
 	end
 end)
@@ -257,8 +280,9 @@ end
 
 local killcamhook = noop
 local function kchReplacement(vic, att, dmg)
-	if vic.diedAsGhost then return end
-	killcamhook(vic, att, dmg)
+	if not shouldSpawnAsGhost(plr) then
+		killcamhook(vic, att, dmg)
+	end
 end
 
 local old_KeyPress = noop

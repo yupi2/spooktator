@@ -133,7 +133,7 @@ hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
 end)
 
 local function DrawPropSpecLabels(client)
-	if (not client:IsSpec()) and (GetRoundState() != ROUND_POST) then return end
+	if (not client:IsSpec()) and (GetRoundState() ~= ROUND_POST) then return end
 
 	surface.SetFont("TabLarge")
 
