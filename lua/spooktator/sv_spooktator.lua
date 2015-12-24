@@ -86,26 +86,18 @@ hook.Add("TTTBeginRound", "setup fancy stuff", function()
 	end
 end)
 
--- Ghost model stuff.
--- TODO: Make sure it works.
-hook.Add("PlayerSetModel", "Ghost model", function(plr)
-	if plr:GetGhostState() then
-		plr:SetModel("models/UCH/mghost.mdl")
-		plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
-	end
-end)
+local function ghostModelStuff(plr)
+	plr:SetModel("models/UCH/mghost.mdl")
+	plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
+end
 
 hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 	if plr:GetGhostState() then
-		--plr:UnSpectate()
 		timer.Simple(1, function()
 			if IsValid(plr) and plr:IsPlayer() and plr:GetGhostState() then
-				hook.Call("PlayerSetModel", nil, plr)
+				ghostModelStuff(plr)
 			end
 		end)
-		--hook.Call("PlayerSetModel", GAMEMODE, plr)
-	--else
-	--	plr:SetBloodColor(0)
 	end
 end)
 
@@ -384,4 +376,22 @@ hook.Add("TTTBeginRound", "TTTBeginRound_Ghost", function()
 		HasteMode = old_haste
 	end
 	hook.Remove("TTTBeginRound", "TTTBeginRound_Ghost")
+end)
+
+-- water sounds to block if a ghost makes them
+local sounds_to_block = {
+	"player/footsteps/wade",
+	"player/footsteps/slosh",
+}
+
+hook.Add("EntityEmitSound", "no waters", function(tbl)
+	local ent = tbl.Entity
+	local SoundName = tbl.SoundName
+	if IsValid(ent) and ent:IsPlayer() and ent:GetGhostState() then
+		for k,v in ipairs(sounds_to_block) do
+			if string.find(SoundName, v, 1, true) ~= nil then
+				return false
+			end
+		end
+	end
 end)
