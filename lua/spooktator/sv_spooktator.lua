@@ -79,6 +79,12 @@ hook.Add("OnPlayerHitGround", "no fallz", function(plr)
 	end
 end)
 
+hook.Add("TTTPrepareRound", "get rid of that thing", function()
+	for k,v in ipairs(player.GetAll()) do
+		v.diedAsGhost = nil
+	end
+end)
+
 -- Setup each player's fanciness for the round.
 hook.Add("TTTBeginRound", "setup fancy stuff", function()
 	for k,v in ipairs(player.GetAll()) do
