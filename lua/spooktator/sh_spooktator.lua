@@ -16,18 +16,18 @@ function PlayerMTbl:SetGhostState(boolean, skip_update)
 	end
 end
 
-hook.Add("Initialize", "gimme your funicies", function()
-	local function tracething(f, TraceData)
-		local tr = f(TraceData)
-		local ent = tr.Entity
+local function tracething(f, TraceData)
+	local tr = f(TraceData)
+	local ent = tr.Entity
 
-		if IsValid(ent) and ent:IsPlayer() and ent:GetGhostState() then
-			return {}
-		end
-
-		return tr
+	if IsValid(ent) and ent:IsPlayer() and ent:GetGhostState() then
+		return {}
 	end
 
+	return tr
+end
+
+hook.Add("Initialize", "gimme your funicies", function()
 	util.origTraceLine = util.TraceLine
 	util.TraceLine = function(TraceData)
 		return tracething(util.origTraceLine, TraceData)
