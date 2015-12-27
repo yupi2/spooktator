@@ -20,20 +20,32 @@ end
 
 function PlayerMTbl:Ghostify()
 	if self:GetGhostState() then return end
+
+	local pos = self:GetPos()
+	local ang = self:GetAngles()
+
 	self:SetRagdollSpec(false)
-	--self:Spectate(OBS_MODE_ROAMING)
 	self:SetGhostState(true)
 	self:Spawn()
 	self:SetNotSolid(true)
+
+	self:SetPos(pos)
+	self:SetAngles(ang)
 end
 
 function PlayerMTbl:UnGhostify()
 	if not self:GetGhostState() then return end
+	
+	local pos = self:GetPos()
+	local ang = self:GetAngles()
+
 	self:SetNotSolid(false)
 	self:SetGhostState(false)
 	self.diedAsGhost = true
 	self:Kill()
-	--self:Spectate(OBS_MODE_ROAMING)
+
+	self:SetPos(pos)
+	self:SetAngles(ang)
 end
 
 function PlayerMTbl:ToggleGhost()
@@ -76,12 +88,6 @@ end
 hook.Add("OnPlayerHitGround", "no fallz", function(plr)
 	if plr:GetGhostState() then
 		return true --block falliez
-	end
-end)
-
-hook.Add("TTTPrepareRound", "get rid of that thing", function()
-	for k,v in ipairs(player.GetAll()) do
-		v.diedAsGhost = nil
 	end
 end)
 
@@ -276,7 +282,7 @@ hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 	end
 end)
 
-local noop = util.noop
+local noop = function() end
 
 local deathbadgehook = noop
 local function dbhReplacement(vic, att, dmg)
@@ -340,7 +346,7 @@ hook.Add("Initialize", "player death things", function()
 	old_SpawnForRound = PlayerMTbl.SpawnForRound
 	function PlayerMTbl:SpawnForRound(dead_only)
 		if self:GetGhostState() then
-			self:SetGhostState(false)
+			self:UnGhostify()
 		end
 		return old_SpawnForRound(self, dead_only)
 	end
