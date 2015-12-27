@@ -68,10 +68,8 @@ end)
 -- hook because it should come later in the cycle and thus less will be broken.
 hook.Add("PreDrawHUD", "gimme update", function()
 	hook.Remove("PreDrawHUD", "gimme update")
-	--timer.Simple(1, function()
-		net.Start("gimmebatchupdate")
-		net.SendToServer()
-	--end)
+	net.Start("gimmebatchupdate")
+	net.SendToServer()
 end)
 
 local color_modification = {
@@ -128,6 +126,7 @@ end)
 -- Adds a bobbing effect to ghosts.
 hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
 	if LocalPlayer():GetGhostState() then
+		-- Edit the table and return nothing so we don't block other hooks.
 		pos.z = pos.z + (math.sin((CurTime() * 3)) * 2)
 	end
 end)
@@ -169,10 +168,8 @@ local function DrawPropSpecLabels(client)
 	end
 end
 
-local old_HUDDrawTargetID = util.noop
-
 hook.Add("Initialize", "Initialize cuk", function()
-	old_HUDDrawTargetID = GAMEMODE.HUDDrawTargetID
+	GAMEMODE.oldHUDDrawTargetID = GAMEMODE.HUDDrawTargetID
 	function GAMEMODE:HUDDrawTargetID()
 		local trace = LocalPlayer():GetEyeTrace(MASK_SHOT)
 		local ent = trace.Entity
@@ -182,7 +179,7 @@ hook.Add("Initialize", "Initialize cuk", function()
 			return
 		end
 
-		old_HUDDrawTargetID(self)
+		self:oldHUDDrawTargetID()
 	end
 
 	function GAMEMODE:PlayerBindPress(ply, bind, pressed)
@@ -245,6 +242,7 @@ hook.Add("Initialize", "Initialize cuk", function()
 			local m = VOICE.CycleMuteState()
 			RunConsoleCommand("ttt_mute_team", m)
 			return true
+		-----------------------------
 		elseif bind == "+duck" and pressed and ply:IsSpec() and not ply:GetGhostState() then
 			if not IsValid(ply:GetObserverTarget()) then
 				if GAMEMODE.ForcedMouse then
@@ -266,26 +264,31 @@ hook.Add("Initialize", "Initialize cuk", function()
 		end
 	end
 
+	function ScoreGroup(plr)
+		if not IsValid(plr) then return -1 end -- will not match any group panel
 
-	function ScoreGroup(p)
-		if not IsValid(p) then return -1 end -- will not match any group panel
-
-		local group = hook.Call( "TTTScoreGroup", nil, p )
+		local group = hook.Call("TTTScoreGroup", nil, plr)
 
 		if group then -- If that hook gave us a group, use it
 			return group
 		end
 
-		if p:GetGhostState() or (DetectiveMode() and p:IsSpec() and
-				p:GetNWBool("playedfuckboiround") and (not p:Alive())) then
-			if not p:GetNWBool("playedfuckboiround") then return GROUP_SPEC end
-			if p:GetNWBool("body_found", false) then
+		local SpawnedForRound = plr:GetNWBool("SpawnedForRound")
+
+		if plr:GetGhostState() or (DetectiveMode() and plr:IsSpec() and
+				SpawnedForRound and not plr:Alive()) then
+
+			if not SpawnedForRound then
+				return GROUP_SPEC
+			end
+
+			if plr:GetNWBool("body_found", false) then
 				return GROUP_FOUND
 			else
 				-- To terrorists, missing players show as alive
 				local lp = LocalPlayer()
-				if ((GAMEMODE.round_state ~= ROUND_ACTIVE) and lp:IsTerror()) or
-						lp:IsSpec() or lp:IsActiveTraitor() then
+				if lp:IsSpec() or lp:IsActiveTraitor() or (lp:IsTerror() and
+						(GetRoundState() ~= ROUND_ACTIVE)) then
 					return GROUP_NOTFOUND
 				else
 					return GROUP_TERROR
@@ -293,6 +296,6 @@ hook.Add("Initialize", "Initialize cuk", function()
 			end
 		end
 
-		return p:IsTerror() and GROUP_TERROR or GROUP_SPEC
+		return plr:IsTerror() and GROUP_TERROR or GROUP_SPEC
 	end
 end)

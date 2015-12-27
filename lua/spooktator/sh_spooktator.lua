@@ -10,13 +10,13 @@ function PlayerMTbl:SetGhostState(boolean, skip_update)
 
 	if SERVER and not skip_update then
 		net.Start("PlayerUpdateGhostState")
-			net.WriteEntity(self)
-			net.WriteBool(boolean)
+		net.WriteEntity(self)
+		net.WriteBool(boolean)
 		net.Broadcast()
 	end
 end
 
-local function tracething(f, TraceData)
+function util._tracething(f, TraceData)
 	local tr = f(TraceData)
 	local ent = tr.Entity
 
@@ -30,19 +30,18 @@ end
 hook.Add("Initialize", "gimme your funicies", function()
 	util.origTraceLine = util.TraceLine
 	util.TraceLine = function(TraceData)
-		return tracething(util.origTraceLine, TraceData)
+		return util._tracething(util.origTraceLine, TraceData)
 	end
 
 	util.origTraceHull = util.TraceHull
 	util.TraceHull = function(TraceData)
-		return tracething(util.origTraceHull, TraceData)
+		return util._tracething(util.origTraceHull, TraceData)
 	end
 end)
 
 -- If the player is holding the jump key then they will float upwards.
 -- If the player is not holding their jump key but they are holding their
 -- duck key then they will remain floating at the current height.
--- The hook is shared so the client doesn't experience jerky movements.
 hook.Add("Move", "Ghost movies", function(plr, mv)
 	if CLIENT and plr ~= LocalPlayer() then return end -- is this possible?
 	if plr:Team() == TEAM_TERROR then return end
@@ -64,23 +63,18 @@ end)
 hook.Add("OnEntityCreated", "Ghost collision check stuff", function(ent)
 	if ent:IsPlayer() then
 		ent:SetCustomCollisionCheck(true)
--- 	elseif SERVER and ent:IsNPC() then
--- 		for k,v in pairs(player.GetAll()) do
--- 			if v:IsGhost() then
--- 				ent:AddEntityRelationship(v, D_NU, 99)
--- 			end
--- 		end
 	end
 end)
 
 hook.Add("ShouldCollide", "Ghost collide", function(ent1, ent2)
 	if not (IsValid(ent1) and IsValid(ent2)) then return end
-	if (ent1.Team and ent1:Team() == TEAM_SPEC) or (ent2.Team and ent2:Team() == TEAM_SPEC) then
+	if (ent1.Team and ent1:Team() == TEAM_SPEC) or
+			(ent2.Team and ent2:Team() == TEAM_SPEC) then
 		return false
 	end
 end)
 
-hook.Add("PlayerFootstep", "no steppies", function(plr)
+hook.Add("PlayerFootstep", "Block spectator footsteps", function(plr)
 	if plr:Team() == TEAM_SPEC then
 		return true -- mutes the steppies
 	end

@@ -21,31 +21,19 @@ end
 function PlayerMTbl:Ghostify()
 	if self:GetGhostState() then return end
 
-	local pos = self:GetPos()
-	local ang = self:GetAngles()
-
 	self:SetRagdollSpec(false)
 	self:SetGhostState(true)
 	self:Spawn()
 	self:SetNotSolid(true)
-
-	self:SetPos(pos)
-	self:SetAngles(ang)
 end
 
 function PlayerMTbl:UnGhostify()
 	if not self:GetGhostState() then return end
-	
-	local pos = self:GetPos()
-	local ang = self:GetAngles()
 
 	self:SetNotSolid(false)
 	self:SetGhostState(false)
 	self.diedAsGhost = true
 	self:Kill()
-
-	self:SetPos(pos)
-	self:SetAngles(ang)
 end
 
 function PlayerMTbl:ToggleGhost()
@@ -58,7 +46,7 @@ function PlayerMTbl:ToggleGhost()
 	end
 end
 
-local function getPlayerGroup(plr)
+local function playerGroup(plr)
 	-- ULib/ULX thing
 	if plr.GetUserGroup then
 		return plr:GetUserGroup()
@@ -69,14 +57,16 @@ local function getPlayerGroup(plr)
 end
 
 local function maybe(percent)
+	-- percent of 100 always returns true.
+	-- percent of 0 always returns false.
 	return (clamp(percent, 0, 100) >= math.random(1, 100))
 end
 
-local function PlayerWillBeFancy(plr)
+local function willPlayerBeFancy(plr)
 	local chance = spooktator.cfg.fancy.player_chance[plr:SteamID()]
 
 	if not isnumber(chance) then
-		chance = spooktator.cfg.fancy.group_chance[getPlayerGroup(plr)]
+		chance = spooktator.cfg.fancy.group_chance[playerGroup(plr)]
 		if not isnumber(chance) then
 			chance = spooktator.cfg.fancy.chance
 		end
@@ -85,33 +75,18 @@ local function PlayerWillBeFancy(plr)
 	return maybe(chance)
 end
 
-hook.Add("OnPlayerHitGround", "no fallz", function(plr)
+hook.Add("OnPlayerHitGround", "Ghost fall damage", function(plr)
 	if plr:GetGhostState() then
-		return true --block falliez
+		return true -- block
 	end
 end)
 
 -- Setup each player's fanciness for the round.
-hook.Add("TTTBeginRound", "setup fancy stuff", function()
+hook.Add("TTTBeginRound", "Ghost fanciness setup", function()
 	for k,v in ipairs(player.GetAll()) do
-		v:SetFancyGhostState(PlayerWillBeFancy(v))
+		v:SetFancyGhostState(willPlayerBeFancy(v))
 	end
 end)
-
--- local ghostHullMin = Vector(-16, -16, 0)
--- local ghostHullMax = Vector(16, 16, 55)
--- local ghostViewOffset = Vector(0, 0, 55)
--- local function updateHulls(plr)
-	-- if plr:GetGhostState() then
-		-- plr:SetHull(ghostHullMin, ghostHullMax)
-		-- plr:SetHullDuck(ghostHullMin, Vector(16, 16, 55))
-
-		-- --plr:SetViewOffset(ghostViewOffset)
-		-- --plr:SetViewOffsetDucked(ghostViewOffset)
-	-- else
-		-- plr:ResetHull()
-	-- end
--- end
 
 local function ghostModelStuff(plr)
 	plr:SetModel("models/UCH/mghost.mdl")
@@ -127,8 +102,6 @@ hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 			end
 		end)
 	end
-
-	-- updateHulls(plr)
 end)
 
 hook.Add("EntityTakeDamage", "ghostie ghost", function(ent, dmg)
@@ -297,17 +270,6 @@ local function kchReplacement(vic, att, dmg)
 	end
 end
 
-local old_KeyPress = noop
-local old_SpectatorThink = noop
-local old_PlayerCanPickupWeapon = noop
-local old_SpawnForRound = noop
-local old_ResetRoundFlags = noop
-local old_spectate = noop
---local old_ShouldSpawn = noop
-local old_GiveLoadout = noop
-local old_KarmaHurt = noop
-local old_BeginRound = noop
-
 -- We overwrite some other addon's hooks so they don't
 -- execute if the player used their kill bind to toggle ghost.
 hook.Add("Initialize", "player death things", function()
@@ -324,108 +286,96 @@ hook.Add("Initialize", "player death things", function()
 		end
 	end
 
-	old_KeyPress = GAMEMODE.KeyPress
+	GAMEMODE.oldKeyPress = GAMEMODE.KeyPress
 	function GAMEMODE:KeyPress(plr, key)
 		if IsValid(plr) and plr:GetGhostState() then return end
-		return old_KeyPress(self, plr, key)
+		return self:oldKeyPress(plr, key)
 	end
 
-	old_SpectatorThink = GAMEMODE.SpectatorThink
+	GAMEMODE.oldSpectatorThink = GAMEMODE.SpectatorThink
 	function GAMEMODE:SpectatorThink(plr)
 		if IsValid(plr) and plr:GetGhostState() then return true end
-		old_SpectatorThink(self, plr)
+		self:oldSpectatorThink(plr)
 	end
 
-	old_PlayerCanPickupWeapon = GAMEMODE.PlayerCanPickupWeapon
+	GAMEMODE.oldPlayerCanPickupWeapon = GAMEMODE.PlayerCanPickupWeapon
 	function GAMEMODE:PlayerCanPickupWeapon(plr, wep)
 		if not IsValid(plr) or not IsValid(wep) then return end
 		if plr:GetGhostState() then return end
-		return old_PlayerCanPickupWeapon(self, plr, wep)
+		return self:oldPlayerCanPickupWeapon(plr, wep)
 	end
 
-	old_SpawnForRound = PlayerMTbl.SpawnForRound
+	PlayerMTbl.oldSpawnForRound = PlayerMTbl.SpawnForRound
 	function PlayerMTbl:SpawnForRound(dead_only)
 		if self:GetGhostState() then
 			self:UnGhostify()
 		end
-		return old_SpawnForRound(self, dead_only)
+		return self:oldSpawnForRound(dead_only)
 	end
 
-	old_ResetRoundFlags = PlayerMTbl.ResetRoundFlags
+	PlayerMTbl.oldResetRoundFlags = PlayerMTbl.ResetRoundFlags
 	function PlayerMTbl:ResetRoundFlags()
 		if self:GetGhostState() then return end
-		old_ResetRoundFlags(self)
+		self:oldResetRoundFlags()
 	end
 
-	old_spectate = PlayerMTbl.Spectate
+	PlayerMTbl.oldSpectate = PlayerMTbl.Spectate
 	function PlayerMTbl:Spectate(mode)
 		if self:GetGhostState() then return end
-		return old_spectate(self, mode)
+		return self:oldSpectate(mode)
 	end
 
-	-- old_ShouldSpawn = PlayerMTbl.ShouldSpawn
-	-- function PlayerMTbl:ShouldSpawn()
-		-- if self:GetGhostState() then return true end
-		-- return old_ShouldSpawn(self)
-	-- end
-
-	old_GiveLoadout = GAMEMODE.PlayerLoadout
+	GAMEMODE.oldGiveLoadout = GAMEMODE.PlayerLoadout
 	function GAMEMODE:PlayerLoadout(plr)
 		if plr:GetGhostState() then return end
-		old_GiveLoadout(self, plr)
+		self:oldGiveLoadout(plr)
 	end
 
-	old_KarmaHurt = KARMA.Hurt
+	KARMA.oldHurt = KARMA.Hurt
 	function KARMA.Hurt(attacker, victim, dmginfo)
 		if not (IsValid(attacker) and IsValid(victim)) then return end
 		if attacker == victim then return end
 		if not (attacker:IsPlayer() and victim:IsPlayer()) then return end
 		if attacker:GetGhostState() or victim:GetGhostState() then return end
-		return old_KarmaHurt(attacker, victim, dmginfo)
+		return KARMA.oldHurt(attacker, victim, dmginfo)
 	end
+end)
 
-	old_BeginRound = BeginRound
-	function BeginRound()
-		old_BeginRound()
-		for k,v in ipairs(player.GetAll()) do
-			if v:Alive() and not v:GetGhostState() then
-				v:SetNWBool("playedfuckboiround", true)
-			else
-				v:SetNWBool("playedfuckboiround", false)
-			end
-		end
+hook.Add("TTTBeginRound", "unknown ghost thing", function()
+	for k,v in ipairs(player.GetAll()) do
+		v:SetNWBool("SpawnedForRound", (v:Alive() and not v:GetGhostState()))
 	end
 end)
 
 -- too many damn scripts override this function on Initialize
 -- so I had the idea of putting this here
 hook.Add("TTTBeginRound", "TTTBeginRound_Ghost", function()
-	local old_haste = HasteMode
-	local old_PlayerDeath = GAMEMODE.PlayerDeath
-	function GAMEMODE:PlayerDeath(ply, infl, attacker)
-		if ply:GetGhostState() then
+	oldHasteMode = HasteMode
+	GAMEMODE.oldPlayerDeath = GAMEMODE.PlayerDeath
+	function GAMEMODE:PlayerDeath(plr, infl, attacker)
+		if plr:GetGhostState() then
 			HasteMode = function()
 				return false
 			end
 		end
-		old_PlayerDeath(self, ply, infl, attacker)
-		HasteMode = old_haste
+		self:oldPlayerDeath(plr, infl, attacker)
+		HasteMode = oldHasteMode
 	end
 	hook.Remove("TTTBeginRound", "TTTBeginRound_Ghost")
 end)
 
--- water sounds to block if a ghost makes them
+-- The only sounds I know of to block are water sounds.
 local sounds_to_block = {
 	"player/footsteps/wade",
 	"player/footsteps/slosh",
 }
 
-hook.Add("EntityEmitSound", "no waters", function(tbl)
+hook.Add("EntityEmitSound", "Block sounds originating from ghosts", function(tbl)
 	local ent = tbl.Entity
-	local SoundName = tbl.SoundName
+	local soundName = tbl.SoundName
 	if IsValid(ent) and ent:IsPlayer() and ent:GetGhostState() then
 		for k,v in ipairs(sounds_to_block) do
-			if string.find(SoundName, v, 1, true) ~= nil then
+			if string.find(soundName, v, 1, true) ~= nil then
 				return false
 			end
 		end
