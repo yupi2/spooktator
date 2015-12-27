@@ -200,7 +200,7 @@ if spooktator.cfg.fancy.enable_secret_command == true then
 			--           ^^--- example userid we'll try to clip out
 			--          ^--- the location spaceIndex points to
 			--  ^^^^^^^^--- the fancycmd
-			local spaceIndex = fancycmd:len() + 1
+			local spaceIndex = fancycmd:len() + 1 -- skips "!cmd"
 
 			if string.sub(text, spaceIndex, spaceIndex) == ' ' then
 				userid = string.sub(text, spaceIndex + 1)
