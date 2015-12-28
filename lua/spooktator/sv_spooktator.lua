@@ -255,15 +255,13 @@ hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 	end
 end)
 
-local noop = function() end
-
-local deathbadgehook = noop
+local deathbadgehook
 local function dbhReplacement(vic, att, dmg)
 	if vic.diedAsGhost then return end
 	deathbadgehook(vic, att, dmg)
 end
 
-local killcamhook = noop
+local killcamhook
 local function kchReplacement(vic, att, dmg)
 	if not shouldSpawnAsGhost(plr) then
 		killcamhook(vic, att, dmg)
