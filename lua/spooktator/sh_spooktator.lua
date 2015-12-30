@@ -1,15 +1,18 @@
 local PlayerMTbl = FindMetaTable("Player")
 
-function PlayerMTbl:GetGhostState()
+function PlayerMTbl:IsGhost()
 	return self.isGhost == true
 end
 
 function PlayerMTbl:SetGhostState(boolean, skip_update)
-	if self:GetGhostState() == boolean then return end
+	if self:IsGhost() == boolean then
+		return
+	end
+
 	self.isGhost = boolean
 
 	if SERVER and not skip_update then
-		net.Start("PlayerUpdateGhostState")
+		net.Start("GhostStateUpdateSingle")
 		net.WriteEntity(self)
 		net.WriteBool(boolean)
 		net.Broadcast()
@@ -20,7 +23,7 @@ function util._tracething(f, TraceData)
 	local tr = f(TraceData)
 	local ent = tr.Entity
 
-	if IsValid(ent) and ent:IsPlayer() and ent:GetGhostState() then
+	if IsValid(ent) and ent:IsPlayer() and ent:IsGhost() then
 		return {}
 	end
 
@@ -42,10 +45,10 @@ end)
 -- If the player is holding the jump key then they will float upwards.
 -- If the player is not holding their jump key but they are holding their
 -- duck key then they will remain floating at the current height.
-hook.Add("Move", "Ghost movies", function(plr, mv)
-	if CLIENT and plr ~= LocalPlayer() then return end -- is this possible?
-	if plr:Team() == TEAM_TERROR then return end
-	if not plr:GetGhostState() then return end
+hook.Add("Move", "Ghost movement", function(plr, mv)
+	if not (plr:Team() == TEAM_SPEC and plr:IsGhost()) then
+		return
+	end
 
 	local vel = plr:GetVelocity()
 

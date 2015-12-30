@@ -1,10 +1,15 @@
-util.AddNetworkString("PlayerUpdateGhostState")
-util.AddNetworkString("PlayerBatchUpdateGhostState")
-util.AddNetworkString("gimmebatchupdate")
+util.AddNetworkString("GhostStateUpdateSingle")
+util.AddNetworkString("GhostStateUpdateBatch")
+util.AddNetworkString("GhostStateUpdateBatchRequest")
 
 local clamp = math.Clamp
 
 local PlayerMTbl = FindMetaTable("Player")
+
+local function ghostsAreAllowed()
+	local state = GetRoundState()
+	return (state == ROUND_ACTIVE or state == ROUND_POST)
+end
 
 function PlayerMTbl:GetFancyGhostState()
 	return self.isFancyGhost == true
@@ -13,13 +18,15 @@ end
 function PlayerMTbl:SetFancyGhostState(boolean)
 	self.isFancyGhost = boolean
 
-	if self:GetGhostState() then
+	if self:IsGhost() then
 		self:SetBodygroup(1, boolean and 1 or 0)
 	end
 end
 
 function PlayerMTbl:Ghostify()
-	if self:GetGhostState() then return end
+	if self:IsGhost() or not ghostsAreAllowed() then
+		return
+	end
 
 	self:SetRagdollSpec(false)
 	self:SetGhostState(true)
@@ -28,7 +35,9 @@ function PlayerMTbl:Ghostify()
 end
 
 function PlayerMTbl:UnGhostify()
-	if not self:GetGhostState() then return end
+	if not self:IsGhost() then
+		return
+	end
 
 	self:SetNotSolid(false)
 	self:SetGhostState(false)
@@ -37,9 +46,11 @@ function PlayerMTbl:UnGhostify()
 end
 
 function PlayerMTbl:ToggleGhost()
-	if self:Team() ~= TEAM_SPEC then return end
+	if not (self:Team() == TEAM_SPEC and ghostsAreAllowed()) then
+		return
+	end
 
-	if self:GetGhostState() then
+	if self:IsGhost() then
 		self:UnGhostify()
 	else
 		self:Ghostify()
@@ -76,7 +87,7 @@ local function willPlayerBeFancy(plr)
 end
 
 hook.Add("OnPlayerHitGround", "Ghost fall damage", function(plr)
-	if plr:GetGhostState() then
+	if plr:IsGhost() then
 		return true -- block
 	end
 end)
@@ -94,10 +105,10 @@ local function ghostModelStuff(plr)
 end
 
 hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
-	if plr:GetGhostState() then
+	if plr:IsGhost() then
 		plr:UnSpectate()
 		timer.Simple(1, function()
-			if IsValid(plr) and plr:IsPlayer() and plr:GetGhostState() then
+			if IsValid(plr) and plr:IsPlayer() and plr:IsGhost() then
 				ghostModelStuff(plr)
 			end
 		end)
@@ -105,7 +116,7 @@ hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 end)
 
 hook.Add("EntityTakeDamage", "ghostie ghost", function(ent, dmg)
-	if ent:IsPlayer() and ent:GetGhostState() then
+	if ent:IsPlayer() and ent:IsGhost() then
 		return true -- block damage
 	end
 end)
@@ -125,7 +136,7 @@ local function PlayerBatchUpdateGhostState(plr)
 
 	for k,v in ipairs(plrs) do
 		net.WriteEntity(v)
-		net.WriteBool(v:GetGhostState())
+		net.WriteBool(v:IsGhost())
 	end
 
 	if IsValid(plr) then
@@ -161,7 +172,9 @@ end)
 -- Also with the possibility to change someone else's with a user-id.
 -- I should probably just use ULib/ULX for this...
 local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
-	if not IsValid(plr) then return end
+	if not IsValid(plr) then
+		return
+	end
 
 	if argstr ~= "" then
 		if not plr:IsSuperAdmin() then
@@ -217,7 +230,9 @@ for k,v in ipairs(spooktator.cfg.commands) do
 end
 
 hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
-	if text[1] ~= "/" and text[1] ~= "!" then return end
+	if text[1] ~= "/" and text[1] ~= "!" then
+		return
+	end
 
 	for k,v in ipairs(spooktator.cfg.commands) do
 		if string.find(text, v, 2, true) == 2 then
@@ -230,18 +245,25 @@ end)
 -- Only players on the terrorist team can suicide so we don't
 -- have to do anything here to prevent it.
 hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
-	if plr:Team() == TEAM_SPEC then
+	if plr:Team() == TEAM_SPEC and ghostsAreAllowed() then
 		plr:ToggleGhost()
 	end
 end)
 
 local function shouldSpawnAsGhost(plr)
-	if plr.diedAsGhost then return false end
-	if not spooktator.cfg.spawn_as_ghost then return false end
-	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then return false end
+	if plr.diedAsGhost then
+		return false
+	end
 
-	local state = GetRoundState()
-	return (state == ROUND_ACTIVE or state == ROUND_POST)
+	if not spooktator.cfg.spawn_as_ghost then
+		return false
+	end
+
+	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then
+		return false
+	end
+
+	return ghostsAreAllowed()
 end
 
 hook.Add("PostPlayerDeath", "playe die thing", function(plr)
@@ -257,7 +279,10 @@ end)
 
 local deathbadgehook
 local function dbhReplacement(vic, att, dmg)
-	if vic.diedAsGhost then return end
+	if vic.diedAsGhost then
+		return
+	end
+
 	deathbadgehook(vic, att, dmg)
 end
 
@@ -286,26 +311,29 @@ hook.Add("Initialize", "player death things", function()
 
 	GAMEMODE.oldKeyPress = GAMEMODE.KeyPress
 	function GAMEMODE:KeyPress(plr, key)
-		if IsValid(plr) and plr:GetGhostState() then return end
+		if IsValid(plr) and plr:IsGhost() then return end
 		return self:oldKeyPress(plr, key)
 	end
 
 	GAMEMODE.oldSpectatorThink = GAMEMODE.SpectatorThink
 	function GAMEMODE:SpectatorThink(plr)
-		if IsValid(plr) and plr:GetGhostState() then return true end
+		if IsValid(plr) and plr:IsGhost() then
+			return true
+		end
+
 		self:oldSpectatorThink(plr)
 	end
 
 	GAMEMODE.oldPlayerCanPickupWeapon = GAMEMODE.PlayerCanPickupWeapon
 	function GAMEMODE:PlayerCanPickupWeapon(plr, wep)
 		if not IsValid(plr) or not IsValid(wep) then return end
-		if plr:GetGhostState() then return end
+		if plr:IsGhost() then return end
 		return self:oldPlayerCanPickupWeapon(plr, wep)
 	end
 
 	PlayerMTbl.oldSpawnForRound = PlayerMTbl.SpawnForRound
 	function PlayerMTbl:SpawnForRound(dead_only)
-		if self:GetGhostState() then
+		if self:IsGhost() then
 			self:UnGhostify()
 		end
 		return self:oldSpawnForRound(dead_only)
@@ -313,19 +341,19 @@ hook.Add("Initialize", "player death things", function()
 
 	PlayerMTbl.oldResetRoundFlags = PlayerMTbl.ResetRoundFlags
 	function PlayerMTbl:ResetRoundFlags()
-		if self:GetGhostState() then return end
+		if self:IsGhost() then return end
 		self:oldResetRoundFlags()
 	end
 
 	PlayerMTbl.oldSpectate = PlayerMTbl.Spectate
 	function PlayerMTbl:Spectate(mode)
-		if self:GetGhostState() then return end
+		if self:IsGhost() then return end
 		return self:oldSpectate(mode)
 	end
 
 	GAMEMODE.oldGiveLoadout = GAMEMODE.PlayerLoadout
 	function GAMEMODE:PlayerLoadout(plr)
-		if plr:GetGhostState() then return end
+		if plr:IsGhost() then return end
 		self:oldGiveLoadout(plr)
 	end
 
@@ -334,14 +362,14 @@ hook.Add("Initialize", "player death things", function()
 		if not (IsValid(attacker) and IsValid(victim)) then return end
 		if attacker == victim then return end
 		if not (attacker:IsPlayer() and victim:IsPlayer()) then return end
-		if attacker:GetGhostState() or victim:GetGhostState() then return end
+		if attacker:IsGhost() or victim:IsGhost() then return end
 		return KARMA.oldHurt(attacker, victim, dmginfo)
 	end
 end)
 
 hook.Add("TTTBeginRound", "unknown ghost thing", function()
 	for k,v in ipairs(player.GetAll()) do
-		v:SetNWBool("SpawnedForRound", (v:Alive() and not v:GetGhostState()))
+		v:SetNWBool("SpawnedForRound", (v:Alive() and not v:IsGhost()))
 	end
 end)
 
@@ -351,7 +379,7 @@ hook.Add("TTTBeginRound", "TTTBeginRound_Ghost", function()
 	oldHasteMode = HasteMode
 	GAMEMODE.oldPlayerDeath = GAMEMODE.PlayerDeath
 	function GAMEMODE:PlayerDeath(plr, infl, attacker)
-		if plr:GetGhostState() then
+		if plr:IsGhost() then
 			HasteMode = function()
 				return false
 			end
@@ -371,7 +399,7 @@ local sounds_to_block = {
 hook.Add("EntityEmitSound", "Block sounds originating from ghosts", function(tbl)
 	local ent = tbl.Entity
 	local soundName = tbl.SoundName
-	if IsValid(ent) and ent:IsPlayer() and ent:GetGhostState() then
+	if IsValid(ent) and ent:IsPlayer() and ent:IsGhost() then
 		for k,v in ipairs(sounds_to_block) do
 			if string.find(soundName, v, 1, true) ~= nil then
 				return false

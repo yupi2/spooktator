@@ -30,7 +30,7 @@ local function PlayerShouldBeDrawn(plr, boolean)
 	plr:SetRenderMode(boolean and RENDERMODE_NORMAL or RENDERMODE_NONE)
 end
 
-local function PlayerUpdateGhostState()
+local function GhostStateUpdateSingle()
 	local plr = net.ReadEntity()
 	local isGhost = net.ReadBool()
 
@@ -39,11 +39,11 @@ local function PlayerUpdateGhostState()
 	end
 end
 
-net.Receive("PlayerUpdateGhostState", PlayerUpdateGhostState)
+net.Receive("GhostStateUpdateSingle", GhostStateUpdateSingle)
 
 -- This net-message is received when the player's game
 -- won't break from being sent net-messages.
-net.Receive("PlayerBatchUpdateGhostState", function()
+net.Receive("GhostStateUpdateBatch", function()
 	--[[ Net stream
 		uint8_t: number of players in batch
 			255 max players should be fineeee
@@ -60,7 +60,7 @@ net.Receive("PlayerBatchUpdateGhostState", function()
 	local count = net.ReadUInt(8)
 
 	for i = 0, count do
-		PlayerUpdateGhostState()
+		GhostStateUpdateSingle()
 	end
 end)
 
@@ -68,7 +68,7 @@ end)
 -- hook because it should come later in the cycle and thus less will be broken.
 hook.Add("PreDrawHUD", "gimme update", function()
 	hook.Remove("PreDrawHUD", "gimme update")
-	net.Start("gimmebatchupdate")
+	net.Start("GhostStateUpdateBatchRequest")
 	net.SendToServer()
 end)
 
@@ -86,7 +86,7 @@ local color_modification = {
 
 -- Deal with doing color and bloom stuff.
 hook.Add("RenderScreenspaceEffects", "Ghost view or something", function()
-	if LocalPlayer():GetGhostState() then
+	if LocalPlayer():IsGhost() then
 		DrawColorModify(color_modification)
 		DrawBloom(.75,  1,  .65,  .65,  3,  0,  0, (72 / 255), 1)
 	end
@@ -125,7 +125,7 @@ end)
 
 -- Adds a bobbing effect to ghosts.
 hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
-	if LocalPlayer():GetGhostState() then
+	if LocalPlayer():IsGhost() then
 		-- Edit the table and return nothing so we don't block other hooks.
 		pos.z = pos.z + (math.sin((CurTime() * 3)) * 2)
 	end
@@ -243,7 +243,7 @@ hook.Add("Initialize", "Initialize cuk", function()
 			RunConsoleCommand("ttt_mute_team", m)
 			return true
 		-----------------------------
-		elseif bind == "+duck" and pressed and ply:IsSpec() and not ply:GetGhostState() then
+		elseif bind == "+duck" and pressed and ply:IsSpec() and not ply:IsGhost() then
 			if not IsValid(ply:GetObserverTarget()) then
 				if GAMEMODE.ForcedMouse then
 					gui.EnableScreenClicker(false)
@@ -275,7 +275,7 @@ hook.Add("Initialize", "Initialize cuk", function()
 
 		local SpawnedForRound = plr:GetNWBool("SpawnedForRound")
 
-		if plr:GetGhostState() or (DetectiveMode() and plr:IsSpec() and
+		if plr:IsGhost() or (DetectiveMode() and plr:IsSpec() and
 				SpawnedForRound and not plr:Alive()) then
 
 			if not SpawnedForRound then
