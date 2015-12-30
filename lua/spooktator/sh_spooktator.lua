@@ -19,29 +19,6 @@ function PlayerMTbl:SetGhostState(boolean, skip_update)
 	end
 end
 
-function util._tracething(f, TraceData)
-	local tr = f(TraceData)
-	local ent = tr.Entity
-
-	if IsValid(ent) and ent:IsPlayer() and ent:IsGhost() then
-		return {}
-	end
-
-	return tr
-end
-
-hook.Add("Initialize", "gimme your funicies", function()
-	util.origTraceLine = util.TraceLine
-	util.TraceLine = function(TraceData)
-		return util._tracething(util.origTraceLine, TraceData)
-	end
-
-	util.origTraceHull = util.TraceHull
-	util.TraceHull = function(TraceData)
-		return util._tracething(util.origTraceHull, TraceData)
-	end
-end)
-
 -- If the player is holding the jump key then they will float upwards.
 -- If the player is not holding their jump key but they are holding their
 -- duck key then they will remain floating at the current height.
