@@ -246,10 +246,12 @@ if spooktator.cfg.fancy.enable_secret_command == true then
 	concommand.Add(fancycmd, PlayerFancyGhostCommand)
 
 	hook.Add("PlayerSay", "Ghost fancy toggle", function(plr, text, isteam)
-		if text[1] ~= "/" and text[1] ~= "!" then return end
+		if text[1] ~= "/" and text[1] ~= "!" then
+			return
+		end
 
 		if string.find(text, fancycmd, 2, true) == 2 then
-			local userid = ""
+			local userid
 			-- "ohyaknow 13"
 			--           ^^--- example userid we'll try to clip out
 			--          ^--- the location spaceIndex points to
@@ -310,11 +312,15 @@ end
 hook.Add("Initialize", "player death things", function()
 	local dpd = hook.GetTable()["DoPlayerDeath"]
 	if dpd then
+		-- the deathbadge thing shows death info (dmg, attacker, etc)
+		-- we don't want this if some ghost death things happened
 		deathbadgehook = dpd["DMSG.SV"]
 		if deathbadgehook then
 			hook.Add("DoPlayerDeath", "DMSG.SV", dbhReplacement)
 		end
 
+		-- the killcam thing aims the camera at the killer
+		-- we don't want this if some ghost death things happened
 		killcamhook = dpd["WKC_SendKillCamData"]
 		if killcamhook then
 			hook.Add("DoPlayerDeath", "WKC_SendKillCamData", kchReplacement)
@@ -323,8 +329,9 @@ hook.Add("Initialize", "player death things", function()
 
 	GAMEMODE.oldKeyPress = GAMEMODE.KeyPress
 	function GAMEMODE:KeyPress(plr, key)
-		if IsValid(plr) and plr:IsGhost() then return end
-		return self:oldKeyPress(plr, key)
+		if IsValid(plr) and not plr:IsGhost() then
+			return self:oldKeyPress(plr, key)
+		end
 	end
 
 	GAMEMODE.oldSpectatorThink = GAMEMODE.SpectatorThink

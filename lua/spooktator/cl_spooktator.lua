@@ -195,6 +195,7 @@ hook.Add("Initialize", "Initialize cuk", function()
 		return self:oldPlayerBindPress(ply, bind, pressed)
 	end
 
+	-- Have a ghost's scoreboard-status unaffected.
 	function ScoreGroup(plr)
 		if not IsValid(plr) then return -1 end -- will not match any group panel
 
@@ -208,7 +209,6 @@ hook.Add("Initialize", "Initialize cuk", function()
 
 		if plr:IsGhost() or (DetectiveMode() and plr:IsSpec() and
 				SpawnedForRound and not plr:Alive()) then
-
 			if not SpawnedForRound then
 				return GROUP_SPEC
 			end
