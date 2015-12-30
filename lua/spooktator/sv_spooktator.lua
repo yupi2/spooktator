@@ -11,6 +11,22 @@ local function ghostsAreAllowed()
 	return (state == ROUND_ACTIVE or state == ROUND_POST)
 end
 
+local function shouldSpawnAsGhost(plr)
+	if plr.diedAsGhost then
+		return false
+	end
+
+	if not spooktator.cfg.spawn_as_ghost then
+		return false
+	end
+
+	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then
+		return false
+	end
+
+	return true
+end
+
 function PlayerMTbl:GetFancyGhostState()
 	return self.isFancyGhost == true
 end
@@ -24,7 +40,7 @@ function PlayerMTbl:SetFancyGhostState(boolean)
 end
 
 function PlayerMTbl:Ghostify()
-	if self:IsGhost() or not ghostsAreAllowed() then
+	if self:IsGhost() then
 		return
 	end
 
@@ -46,14 +62,12 @@ function PlayerMTbl:UnGhostify()
 end
 
 function PlayerMTbl:ToggleGhost()
-	if not (self:Team() == TEAM_SPEC and ghostsAreAllowed()) then
-		return
-	end
-
-	if self:IsGhost() then
-		self:UnGhostify()
-	else
-		self:Ghostify()
+	if self:Team() == TEAM_SPEC then
+		if self:IsGhost() then
+			self:UnGhostify()
+		else
+			self:Ghostify()
+		end
 	end
 end
 
@@ -65,6 +79,8 @@ local function playerGroup(plr)
 
 	-- Insert other group stuff here.
 	-- I haven't used anything other than ULib/ULX so I can't be bothered.
+
+	return "user"
 end
 
 local function maybe(percent)
@@ -86,44 +102,17 @@ local function willPlayerBeFancy(plr)
 	return maybe(chance)
 end
 
-hook.Add("OnPlayerHitGround", "Ghost fall damage", function(plr)
-	if plr:IsGhost() then
-		return true -- block
-	end
-end)
-
 -- Setup each player's fanciness for the round.
-hook.Add("TTTBeginRound", "Ghost fanciness setup", function()
+hook.Add("TTTBeginRound", "Do some ghost stuff", function()
 	for k,v in ipairs(player.GetAll()) do
+		v:SetNWBool("SpawnedForRound", (v:Alive() and not v:IsGhost()))
 		v:SetFancyGhostState(willPlayerBeFancy(v))
-	end
-end)
-
-local function ghostModelStuff(plr)
-	plr:SetModel("models/UCH/mghost.mdl")
-	plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
-end
-
-hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
-	if plr:IsGhost() then
-		plr:UnSpectate()
-		timer.Simple(1, function()
-			if IsValid(plr) and plr:IsPlayer() and plr:IsGhost() then
-				ghostModelStuff(plr)
-			end
-		end)
-	end
-end)
-
-hook.Add("EntityTakeDamage", "ghostie ghost", function(ent, dmg)
-	if ent:IsPlayer() and ent:IsGhost() then
-		return true -- block damage
 	end
 end)
 
 -- This function sends every player's ghost-state to the plr entity.
 -- If plr is not valid then the batch is sent to every player.
-local function PlayerBatchUpdateGhostState(plr)
+local function GhostStateUpdateBatch(plr)
 	local plrs = player.GetAll()
 	local count = #plrs
 
@@ -131,7 +120,7 @@ local function PlayerBatchUpdateGhostState(plr)
 		error("what the literal fuck?")
 	end
 
-	net.Start("PlayerBatchUpdateGhostState")
+	net.Start("GhostStateUpdateBatch")
 	net.WriteUInt(count, 8)
 
 	for k,v in ipairs(plrs) do
@@ -148,9 +137,9 @@ end
 
 -- A player sends this message when their client isn't
 -- going to break for receiving net-messages.
-net.Receive("gimmebatchupdate", function(size, plr)
+net.Receive("GhostStateUpdateBatchRequest", function(size, plr)
 	if IsValid(plr) then
-		PlayerBatchUpdateGhostState(plr)
+		GhostStateUpdateBatch(plr)
 		plr:SetFancyGhostState(PlayerWillBeFancy(plr))
 	end
 end)
@@ -163,9 +152,61 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 		-- net-message that is done inside of the SetGhostState function.
 		-- This is done so we can batch update this shit.
 		v:SetGhostState(false, true)
+
+		-- Clear this flag
+		v.diedAsGhost = nil
 	end
 
-	PlayerBatchUpdateGhostState(nil)
+	GhostStateUpdateBatch(nil)
+end)
+
+hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
+	if plr:IsGhost() then
+		plr:UnSpectate()
+
+		local timerid = "ghostmodel" .. plr:SteamID()
+		if timer.Exists(timerid) then
+			timer.Start(timerid) -- restart timer
+		else
+			timer.Create(timerid, 1, 1, function()
+				if IsValid(plr) and plr:IsPlayer() and plr:IsGhost() then
+					plr:SetModel("models/UCH/mghost.mdl")
+					plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
+				end
+			end)
+		end
+	end
+end)
+
+hook.Add("EntityTakeDamage", "No damage for ghosts", function(ent, dmg)
+	if ent:IsPlayer() and ent:IsGhost() then
+		return true -- block damage
+	end
+end)
+
+hook.Add("OnPlayerHitGround", "Ghost fall damage", function(plr)
+	if plr:IsGhost() then
+		return true -- block
+	end
+end)
+
+-- Only players on the terrorist team can suicide so we don't
+-- have to do anything here to prevent it.
+hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
+	if plr:Team() == TEAM_SPEC and ghostsAreAllowed() then
+		plr:ToggleGhost()
+	end
+end)
+
+hook.Add("PostPlayerDeath", "playe die thing", function(plr)
+	if plr.diedAsGhost then
+		plr.diedAsGhost = nil
+		return
+	end
+
+	if ghostsAreAllowed() and shouldSpawnAsGhost(plr) then
+		plr:Ghostify()
+	end
 end)
 
 -- Command for a player to use to change their fanciness.
@@ -225,8 +266,14 @@ if spooktator.cfg.fancy.enable_secret_command == true then
 	end)
 end
 
+local function toggleSpookyGhost(plr)
+	if ghostsAreAllowed() then
+		plr:ToggleGhost()
+	end
+end
+
 for k,v in ipairs(spooktator.cfg.commands) do
-	concommand.Add(v, PlayerMTbl.ToggleGhost, nil, "toggle spooky ghost")
+	concommand.Add(v, toggleSpookyGhost, nil, "toggle spooky ghost")
 end
 
 hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
@@ -236,44 +283,9 @@ hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
 
 	for k,v in ipairs(spooktator.cfg.commands) do
 		if string.find(text, v, 2, true) == 2 then
-			plr:ToggleGhost()
+			toggleSpookyGhost(plr)
 			return ""
 		end
-	end
-end)
-
--- Only players on the terrorist team can suicide so we don't
--- have to do anything here to prevent it.
-hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
-	if plr:Team() == TEAM_SPEC and ghostsAreAllowed() then
-		plr:ToggleGhost()
-	end
-end)
-
-local function shouldSpawnAsGhost(plr)
-	if plr.diedAsGhost then
-		return false
-	end
-
-	if not spooktator.cfg.spawn_as_ghost then
-		return false
-	end
-
-	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then
-		return false
-	end
-
-	return ghostsAreAllowed()
-end
-
-hook.Add("PostPlayerDeath", "playe die thing", function(plr)
-	if plr.diedAsGhost then
-		plr.diedAsGhost = nil
-		return
-	end
-
-	if shouldSpawnAsGhost(plr) then
-		plr:Ghostify()
 	end
 end)
 
@@ -364,12 +376,6 @@ hook.Add("Initialize", "player death things", function()
 		if not (attacker:IsPlayer() and victim:IsPlayer()) then return end
 		if attacker:IsGhost() or victim:IsGhost() then return end
 		return KARMA.oldHurt(attacker, victim, dmginfo)
-	end
-end)
-
-hook.Add("TTTBeginRound", "unknown ghost thing", function()
-	for k,v in ipairs(player.GetAll()) do
-		v:SetNWBool("SpawnedForRound", (v:Alive() and not v:IsGhost()))
 	end
 end)
 
