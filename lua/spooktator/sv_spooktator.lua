@@ -166,15 +166,15 @@ hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 
 		local timerid = "ghostmodel" .. plr:SteamID()
 		if timer.Exists(timerid) then
-			timer.Start(timerid) -- restart timer
-		else
-			timer.Create(timerid, 1, 1, function()
-				if IsValid(plr) and plr:IsPlayer() and plr:IsGhost() then
-					plr:SetModel("models/UCH/mghost.mdl")
-					plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
-				end
-			end)
+			timer.Remove(timerid)
 		end
+			
+		timer.Create(timerid, 1, 1, function()
+			if IsValid(plr) and plr:IsPlayer() and plr:IsGhost() then
+				plr:SetModel("models/UCH/mghost.mdl")
+				plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
+			end
+		end)
 	end
 end)
 
