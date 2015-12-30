@@ -45,10 +45,9 @@ net.Receive("GhostStateUpdateSingle", GhostStateUpdateSingle)
 -- won't break from being sent net-messages.
 net.Receive("GhostStateUpdateBatch", function()
 	--[[ Net stream
-		uint8_t: number of players in batch
-			255 max players should be fineeee
-		entity: the player
-		boolean: is the player a ghost
+		uint8_t - number of players in batch
+		entity  - the player
+		boolean - is the player a ghost
 		entity
 		boolean
 		etc...
@@ -131,8 +130,12 @@ hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
 	end
 end)
 
+-- This function is duplicated from the TTT core gamemode files. In the core
+-- files, this function is not a global function so we can't call it.
 local function DrawPropSpecLabels(client)
-	if (not client:IsSpec()) and (GetRoundState() ~= ROUND_POST) then return end
+	if (not client:IsSpec()) and (GetRoundState() ~= ROUND_POST) then
+		return
+	end
 
 	surface.SetFont("TabLarge")
 
@@ -174,7 +177,7 @@ hook.Add("Initialize", "Initialize cuk", function()
 		local trace = LocalPlayer():GetEyeTrace(MASK_SHOT)
 		local ent = trace.Entity
 
-		if not (IsValid(ent) and ent:IsPlayer()) or ent:Team() == TEAM_SPEC then
+		if not (IsValid(ent) and ent:IsPlayer()) or (ent:Team() == TEAM_SPEC) then
 			DrawPropSpecLabels(LocalPlayer())
 			return
 		end
@@ -182,86 +185,14 @@ hook.Add("Initialize", "Initialize cuk", function()
 		self:oldHUDDrawTargetID()
 	end
 
+	-- Disable the +duck bind unfocusing the cursor when a ghost.
+	GAMEMODE.oldPlayerBindPress = GAMEMODE.PlayerBindPress
 	function GAMEMODE:PlayerBindPress(ply, bind, pressed)
-		if not IsValid(ply) then return end
-
-		if bind == "invnext" and pressed then
-			if ply:IsSpec() then
-				TIPS.Next()
-			else
-				WSWITCH:SelectNext()
-			end
-			return true
-		elseif bind == "invprev" and pressed then
-			if ply:IsSpec() then
-				TIPS.Prev()
-			else
-				WSWITCH:SelectPrev()
-			end
-			return true
-		elseif bind == "+attack" then
-			if WSWITCH:PreventAttack() then
-				if not pressed then
-					WSWITCH:ConfirmSelection()
-				end
-				return true
-			end
-		elseif bind == "+sprint" then
-			-- set voice type here just in case shift is no longer down when the
-			-- PlayerStartVoice hook runs, which might be the case when switching to
-			-- steam overlay
-			ply.traitor_gvoice = false
-			RunConsoleCommand("tvog", "0")
-			return true
-		elseif bind == "+use" and pressed then
-			if ply:IsSpec() then
-				RunConsoleCommand("ttt_spec_use")
-				return true
-			elseif TBHUD:PlayerIsFocused() then
-				return TBHUD:UseFocused()
-			end
-		elseif string.sub(bind, 1, 4) == "slot" and pressed then
-			local idx = tonumber(string.sub(bind, 5, -1)) or 1
-
-			-- if radiomenu is open, override weapon select
-			if RADIO.Show then
-				RADIO:SendCommand(idx)
-			else
-				WSWITCH:SelectSlot(idx)
-			end
-			return true
-		elseif string.find(bind, "zoom") and pressed then
-			-- open or close radio
-			RADIO:ShowRadioCommands(not RADIO.Show)
-			return true
-		elseif bind == "+voicerecord" then
-			if not VOICE.CanSpeak() then
-				return true
-			end
-		elseif bind == "gm_showteam" and pressed and ply:IsSpec() then
-			local m = VOICE.CycleMuteState()
-			RunConsoleCommand("ttt_mute_team", m)
-			return true
-		-----------------------------
-		elseif bind == "+duck" and pressed and ply:IsSpec() and not ply:IsGhost() then
-			if not IsValid(ply:GetObserverTarget()) then
-				if GAMEMODE.ForcedMouse then
-					gui.EnableScreenClicker(false)
-					GAMEMODE.ForcedMouse = false
-				else
-					gui.EnableScreenClicker(true)
-					GAMEMODE.ForcedMouse = true
-				end
-			end
-		elseif bind == "noclip" and pressed then
-			if not GetConVar("sv_cheats"):GetBool() then
-				RunConsoleCommand("ttt_equipswitch")
-				return true
-			end
-		elseif (bind == "gmod_undo" or bind == "undo") and pressed then
-			RunConsoleCommand("ttt_dropammo")
+		if IsValid(ply) and ply:IsGhost() and bind == "+duck" then
 			return true
 		end
+
+		return self:oldPlayerBindPress(ply, bind, pressed)
 	end
 
 	function ScoreGroup(plr)

@@ -5,10 +5,6 @@ function PlayerMTbl:IsGhost()
 end
 
 function PlayerMTbl:SetGhostState(boolean, skip_update)
-	if self:IsGhost() == boolean then
-		return
-	end
-
 	self.isGhost = boolean
 
 	if SERVER and not skip_update then
@@ -47,7 +43,10 @@ hook.Add("OnEntityCreated", "Ghost collision check stuff", function(ent)
 end)
 
 hook.Add("ShouldCollide", "Ghost collide", function(ent1, ent2)
-	if not (IsValid(ent1) and IsValid(ent2)) then return end
+	if not (IsValid(ent1) and IsValid(ent2)) then
+		return
+	end
+
 	if (ent1.Team and ent1:Team() == TEAM_SPEC) or
 			(ent2.Team and ent2:Team() == TEAM_SPEC) then
 		return false
