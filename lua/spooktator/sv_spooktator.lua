@@ -72,7 +72,7 @@ function PlayerMTbl:ToggleGhost()
 end
 
 local function playerGroup(plr)
-	-- ULib/ULX thing
+	-- ULib/ULX and maestro
 	if plr.GetUserGroup then
 		return plr:GetUserGroup()
 	end
