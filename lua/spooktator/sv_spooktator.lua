@@ -69,12 +69,10 @@ function PlayerMTbl:UnGhostify()
 end
 
 function PlayerMTbl:ToggleGhost()
-	if self:Team() == TEAM_SPEC then
-		if self:IsGhost() then
-			self:UnGhostify()
-		else
-			self:Ghostify()
-		end
+	if self:IsGhost() then
+		self:UnGhostify()
+	else
+		self:Ghostify()
 	end
 end
 
@@ -96,6 +94,8 @@ local function maybe(percent)
 	return (clamp(percent, 0, 100) >= math.random(1, 100))
 end
 
+-- Uses the fancy config values in "sv_config.lua" to determine
+--  if the player will be fancy for the round.
 local function willPlayerBeFancy(plr)
 	local chance = spooktator.cfg.fancy.player_chance[plr:SteamID()]
 
@@ -163,6 +163,7 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 	GhostStateUpdateBatch(nil)
 end)
 
+-- Set the ghost's model.
 hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 	if plr:IsGhost() then
 		plr:UnSpectate()
@@ -195,14 +196,14 @@ hook.Add("OnPlayerHitGround", "Ghost fall damage", function(plr)
 end)
 
 -- Only players on the terrorist team can suicide so we don't
--- have to do anything here to prevent it.
+--  have to do anything here to prevent it.
 hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
 	if plr:Team() == TEAM_SPEC and ghostsAreAllowed() then
 		plr:ToggleGhost()
 	end
 end)
 
-hook.Add("PostPlayerDeath", "playe die thing", function(plr)
+hook.Add("PostPlayerDeath", "ghost die thing", function(plr)
 	if plr.diedAsGhost then
 		plr.diedAsGhost = nil
 		return
@@ -213,19 +214,19 @@ hook.Add("PostPlayerDeath", "playe die thing", function(plr)
 	end
 end)
 
--- Command for a player to use to change their fanciness.
--- Also with the possibility to change someone else's with a user-id.
--- I should probably just use ULib/ULX for this...
+-- NOTE: The local player must be a superadmin.
+-- Usage in console:
+-- <command>
+--   This toggles fancy on the local player.
+-- <command> <user-id>
+--   This toggles fancy on the player given.\
+--   You can get user-id's from the console command "status".
 local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
-	if not IsValid(plr) then
+	if not (IsValid(plr) and plr:IsSuperAdmin()) then
 		return
 	end
 
 	if argstr ~= "" then
-		if not plr:IsSuperAdmin() then
-			return
-		end
-
 		local userid = tonumber(argstr)
 		if userid == nil then
 			plr:PrintMessage(HUD_PRINTTALK, "Invalid user-id")
@@ -297,11 +298,9 @@ end)
 
 local deathbadgehook
 local function dbhReplacement(vic, att, dmg)
-	if vic.diedAsGhost then
-		return
-	end
-
-	deathbadgehook(vic, att, dmg)
+	if not vic.diedAsGhost then
+		deathbadgehook(vic, att, dmg)
+	emd
 end
 
 local killcamhook
@@ -331,29 +330,34 @@ hook.Add("Initialize", "player death things", function()
 		end
 	end
 
+	-- Prevent next/prev player-view spectator binds for ghosts.
 	GAMEMODE.oldKeyPress = GAMEMODE.KeyPress
 	function GAMEMODE:KeyPress(plr, key)
-		if IsValid(plr) and not plr:IsGhost() then
+		if not plr:IsGhost() then
 			return self:oldKeyPress(plr, key)
 		end
 	end
 
+	-- Prevent some more spectator stuff from happening.
 	GAMEMODE.oldSpectatorThink = GAMEMODE.SpectatorThink
 	function GAMEMODE:SpectatorThink(plr)
-		if IsValid(plr) and plr:IsGhost() then
-			return true
+		if not plr:IsGhost() then
+			self:oldSpectatorThink(plr)
 		end
-
-		self:oldSpectatorThink(plr)
 	end
 
+	-- Prevent ghosts from picking up weapons.
 	GAMEMODE.oldPlayerCanPickupWeapon = GAMEMODE.PlayerCanPickupWeapon
 	function GAMEMODE:PlayerCanPickupWeapon(plr, wep)
-		if not IsValid(plr) or not IsValid(wep) then return end
-		if plr:IsGhost() then return end
+		if IsValid(plr) and plr:IsGhost() then
+			return false
+		end
 		return self:oldPlayerCanPickupWeapon(plr, wep)
 	end
 
+	-- Prevents and players being spawned into TEAM_TERROR from remaining
+	--  ghosts. We've got a few pre-round hooks to unghostify people, but
+	--  this also unghostifies players being respawned mid-round by admins.
 	PlayerMTbl.oldSpawnForRound = PlayerMTbl.SpawnForRound
 	function PlayerMTbl:SpawnForRound(dead_only)
 		if self:IsGhost() then
@@ -362,18 +366,21 @@ hook.Add("Initialize", "player death things", function()
 		return self:oldSpawnForRound(dead_only)
 	end
 
+	-- Honestly, who knows...
 	PlayerMTbl.oldResetRoundFlags = PlayerMTbl.ResetRoundFlags
 	function PlayerMTbl:ResetRoundFlags()
 		if self:IsGhost() then return end
 		self:oldResetRoundFlags()
 	end
 
+	-- Again, who knows...
 	PlayerMTbl.oldSpectate = PlayerMTbl.Spectate
 	function PlayerMTbl:Spectate(mode)
 		if self:IsGhost() then return end
 		return self:oldSpectate(mode)
 	end
 
+	-- Prevent players from getting items when spawning as a ghost.
 	GAMEMODE.oldGiveLoadout = GAMEMODE.PlayerLoadout
 	function GAMEMODE:PlayerLoadout(plr)
 		if plr:IsGhost() then return end
@@ -413,7 +420,7 @@ local sounds_to_block = {
 	"player/footsteps/slosh",
 }
 
-hook.Add("EntityEmitSound", "Block sounds originating from ghosts", function(tbl)
+hook.Add("EntityEmitSound", "Block sounds spawned from ghosts", function(tbl)
 	local ent = tbl.Entity
 	local soundName = tbl.SoundName
 	if IsValid(ent) and ent:IsPlayer() and ent:IsGhost() then
