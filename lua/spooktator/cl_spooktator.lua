@@ -125,13 +125,15 @@ end)
 -- Adds a bobbing effect to ghosts.
 hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
 	if LocalPlayer():IsGhost() then
-		-- Edit the table and return nothing so we don't block other hooks.
+		-- Just editing the table's value because we don't want to block
+		--  any other hooks. Tables are basically references/pointers so
+		--  that's why it's possible to just edit the value.
 		pos.z = pos.z + (math.sin((CurTime() * 3)) * 2)
 	end
 end)
 
 -- This function is duplicated from the TTT core gamemode files. In the core
--- files, this function is not a global function so we can't call it.
+--  files, this function is not a global function so we can't call it.
 local function DrawPropSpecLabels(client)
 	if (not client:IsSpec()) and (GetRoundState() ~= ROUND_POST) then
 		return
@@ -172,12 +174,17 @@ local function DrawPropSpecLabels(client)
 end
 
 hook.Add("Initialize", "Initialize cuk", function()
+	-- Hide HUD thing when your crosshair is over a ghost and you're alive.
 	GAMEMODE.oldHUDDrawTargetID = GAMEMODE.HUDDrawTargetID
 	function GAMEMODE:HUDDrawTargetID()
 		local trace = LocalPlayer():GetEyeTrace(MASK_SHOT)
 		local ent = trace.Entity
 
-		if not (IsValid(ent) and ent:IsPlayer()) or (ent:Team() == TEAM_SPEC) then
+		-- Check if the targeted player is in TEAM_SPEC.
+		-- If so then we'll call DrawPropSpecLabels so they'll show without
+		--  having to call the rest of the HUDDrawTargetID function.
+		if not (IsValid(ent) and ent:IsPlayer())
+				or (ent:Team() == TEAM_SPEC) then
 			DrawPropSpecLabels(LocalPlayer())
 			return
 		end
@@ -195,7 +202,12 @@ hook.Add("Initialize", "Initialize cuk", function()
 		return self:oldPlayerBindPress(ply, bind, pressed)
 	end
 
-	-- Have a ghost's scoreboard-status unaffected.
+	-- Have a player's status on the scoreboard not be affected by their
+	--  ghost state.
+	-- GROUP_SPEC:     didn't play in round (joining late or spectator-only)
+	-- GROUP_FOUND:    someone identified the player's body
+	-- GROUP_TERROR:   player = alive (or dead and body not identified)
+	-- GROUP_NOTFOUND: LocalPlayer = traitor or spec; player = dead; not id'd
 	function ScoreGroup(plr)
 		if not IsValid(plr) then return -1 end -- will not match any group panel
 
