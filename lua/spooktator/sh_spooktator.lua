@@ -19,6 +19,8 @@ end
 -- If the player is not holding their jump key but they are holding their
 -- duck key then they will remain floating at the current height.
 hook.Add("Move", "Ghost movement", function(plr, mv)
+	-- The TEAM_SPEC check should be left here in case of any
+	--  regressions so alive players can't just float around like ghosts.
 	if not (plr:Team() == TEAM_SPEC and plr:IsGhost()) then
 		return
 	end
