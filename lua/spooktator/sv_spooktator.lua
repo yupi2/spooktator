@@ -246,32 +246,30 @@ local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 	plr:SetFancyGhostState(not plr:IsFancyGhost())
 end
 
-if spooktator.cfg.fancy.enable_secret_command == true then
-	local fancycmd = spooktator.cfg.fancy.secret_command
-	concommand.Add(fancycmd, PlayerFancyGhostCommand)
+local fancycmd = spooktator.cfg.fancy.command
+concommand.Add(fancycmd, PlayerFancyGhostCommand)
 
-	hook.Add("PlayerSay", "Ghost fancy toggle", function(plr, text, isteam)
-		if text[1] ~= "/" and text[1] ~= "!" then
-			return
+hook.Add("PlayerSay", "Ghost fancy toggle", function(plr, text, isteam)
+	if text[1] ~= "/" and text[1] ~= "!" then
+		return
+	end
+
+	if string.find(text, fancycmd, 2, true) == 2 then
+		local userid
+		-- "ohyaknow 13"
+		--           ^^--- example userid we'll try to clip out
+		--          ^--- the location spaceIndex points to
+		--  ^^^^^^^^--- the fancycmd
+		local spaceIndex = fancycmd:len() + 1 -- skips "!cmd"
+
+		if string.sub(text, spaceIndex, spaceIndex) == ' ' then
+			userid = string.sub(text, spaceIndex + 1)
 		end
 
-		if string.find(text, fancycmd, 2, true) == 2 then
-			local userid
-			-- "ohyaknow 13"
-			--           ^^--- example userid we'll try to clip out
-			--          ^--- the location spaceIndex points to
-			--  ^^^^^^^^--- the fancycmd
-			local spaceIndex = fancycmd:len() + 1 -- skips "!cmd"
-
-			if string.sub(text, spaceIndex, spaceIndex) == ' ' then
-				userid = string.sub(text, spaceIndex + 1)
-			end
-
-			PlayerFancyGhostCommand(plr, nil, nil, userid)
-			return ""
-		end
-	end)
-end
+		PlayerFancyGhostCommand(plr, nil, nil, userid)
+		return ""
+	end
+end)
 
 local function toggleSpookyGhost(plr)
 	if ghostsAreAllowed() then

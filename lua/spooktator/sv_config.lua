@@ -46,8 +46,5 @@ spooktator.cfg.fancy.group_chance = {
 	--["donor"] = 20,
 }
 
--- secret
-spooktator.cfg.fancy.enable_secret_command = true
-
--- secret
-spooktator.cfg.fancy.secret_command = "ohyaknow"
+-- Command for superadmins to toggle fanciness on themself or others.
+spooktator.cfg.fancy.command = "ohyaknow"
