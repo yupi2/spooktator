@@ -12,6 +12,7 @@ local function ghostsAreAllowed()
 end
 
 local function shouldSpawnAsGhost(plr)
+	-- This flag is checked to see if plr is toggling out of ghost-mode.
 	if plr.diedAsGhost then
 		return false
 	end
@@ -20,6 +21,7 @@ local function shouldSpawnAsGhost(plr)
 		return false
 	end
 
+	-- Client-side CVar to enable/disable ghost-mode.
 	if plr:GetInfoNum("spawnasghost", 0) ~= 1 then
 		return false
 	end
@@ -27,7 +29,7 @@ local function shouldSpawnAsGhost(plr)
 	return true
 end
 
-function PlayerMTbl:GetFancyGhostState()
+function PlayerMTbl:IsFancyGhost()
 	return self.isFancyGhost == true
 end
 
@@ -35,6 +37,7 @@ function PlayerMTbl:SetFancyGhostState(boolean)
 	self.isFancyGhost = boolean
 
 	if self:IsGhost() then
+		-- Bodygroup value 1 for fancy. Value 0 for non-fancy.
 		self:SetBodygroup(1, boolean and 1 or 0)
 	end
 end
@@ -47,6 +50,7 @@ function PlayerMTbl:Ghostify()
 	self:SetRagdollSpec(false)
 	self:SetGhostState(true)
 	self:Spawn()
+	-- Have projectiles and melee pass through.
 	self:SetNotSolid(true)
 end
 
@@ -55,8 +59,11 @@ function PlayerMTbl:UnGhostify()
 		return
 	end
 
+	-- Re-enable projectile/melee collision.
 	self:SetNotSolid(false)
 	self:SetGhostState(false)
+	-- This flag is set so hooks called on a player's death won't
+	-- respawn ghosts or do any silly killcam/deathbadge stuff.
 	self.diedAsGhost = true
 	self:Kill()
 end
@@ -110,33 +117,29 @@ hook.Add("TTTBeginRound", "Do some ghost stuff", function()
 	end
 end)
 
--- This function sends every player's ghost-state to the plr entity.
--- If plr is not valid then the batch is sent to every player.
-local function GhostStateUpdateBatch(plr)
+-- This function sends every player's ghost-state to the messageTarget player.
+-- If the messageTarget parameter was not passed then the batch is sent to
+--  every player.
+local function GhostStateUpdateBatch(messageTarget)
 	local plrs = player.GetAll()
-	local count = #plrs
-
-	if count >= 255 then
-		error("what the literal fuck?")
-	end
 
 	net.Start("GhostStateUpdateBatch")
-	net.WriteUInt(count, 8)
+	net.WriteUInt(count, #plrs)
 
 	for k,v in ipairs(plrs) do
 		net.WriteEntity(v)
 		net.WriteBool(v:IsGhost())
 	end
 
-	if IsValid(plr) then
-		net.Send(plr)
+	if IsValid(messageTarget) then
+		net.Send(messageTarget)
 	else
 		net.Broadcast()
 	end
 end
 
 -- A player sends this message when their client isn't
--- going to break for receiving net-messages.
+--  going to break for receiving net-messages.
 net.Receive("GhostStateUpdateBatchRequest", function(size, plr)
 	if IsValid(plr) then
 		GhostStateUpdateBatch(plr)
@@ -145,15 +148,15 @@ net.Receive("GhostStateUpdateBatchRequest", function(size, plr)
 end)
 
 -- This hook is called right before players are spawned in the TTTPrepareRound
--- gamemode function. We resend ghost-states to fix models or whatever.
+--  gamemode function. We resend ghost-states to fix models or whatever.
 hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 	for k,v in ipairs(player.GetAll()) do
 		-- The second argument (the "true" boolean) disables the
-		-- net-message that is done inside of the SetGhostState function.
+		--  net-message that is done inside of the SetGhostState function.
 		-- This is done so we can batch update this shit.
 		v:SetGhostState(false, true)
 
-		-- Clear this flag
+		-- Clear this flag.
 		v.diedAsGhost = nil
 	end
 
@@ -168,11 +171,12 @@ hook.Add("PlayerSpawn", "Ghost spawn", function(plr)
 		if timer.Exists(timerid) then
 			timer.Remove(timerid)
 		end
-			
+
 		timer.Create(timerid, 1, 1, function()
 			if IsValid(plr) and plr:IsPlayer() and plr:IsGhost() then
 				plr:SetModel("models/UCH/mghost.mdl")
-				plr:SetBodygroup(1, plr:GetFancyGhostState() and 1 or 0)
+				-- Setup the fancy-ghost bodygroup.
+				plr:SetFancyGhostState(plr:IsFancyGhost())
 			end
 		end)
 	end
@@ -234,11 +238,11 @@ local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 			return
 		end
 
-		tgt:SetFancyGhostState(not tgt:GetFancyGhostState())
+		tgt:SetFancyGhostState(not tgt:IsFancyGhost())
 		return
 	end
 
-	plr:SetFancyGhostState(not plr:GetFancyGhostState())
+	plr:SetFancyGhostState(not plr:IsFancyGhost())
 end
 
 if spooktator.cfg.fancy.enable_secret_command == true then

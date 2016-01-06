@@ -5,23 +5,23 @@ spooktator.cfg.fancy = {}
 -- The highest fancy chance is 100 which forces that person to be fancy.
 
 --[[ The player fancy shit is picked as follows:
-	If player has a set chance then set their chance to that and exit.
-		(spooktator.cfg.fancy.player_chance)
+ If player has a set chance then set their chance to that and exit.
+  (spooktator.cfg.fancy.player_chance)
 
-	If a player's group has a set chance then set their chance to that and exit.
-		(spooktator.cfg.fancy.group_chance)
+ If a player's group has a set chance then set their chance to that and exit.
+  (spooktator.cfg.fancy.group_chance)
 
-	Set a player's chance to the default.
-		(spooktator.cfg.fancy.chance)
+ Set a player's chance to the default.
+  (spooktator.cfg.fancy.chance)
 ]]
 
 -- Should players spawn as a ghost by default when they die?
--- Players can still disable auto-spawn-as-ghost with the "spawnasghost" CVAR.
+-- Players can still disable auto-spawn-as-ghost with the "spawnasghost" CVar.
 -- DEFAULT VALUE: true
 spooktator.cfg.spawn_as_ghost = true
 
 -- Commands that can be used in like "!<COMMAND>" or "/<COMMAND>" or
--- in console like "<COMMAND>".
+--  in the console like "<COMMAND>".
 spooktator.cfg.commands = {
 	"toggleghost",
 	"spoopy",
