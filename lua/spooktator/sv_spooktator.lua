@@ -367,22 +367,25 @@ hook.Add("Initialize", "player death things", function()
 	-- Honestly, who knows...
 	PlayerMTbl.oldResetRoundFlags = PlayerMTbl.ResetRoundFlags
 	function PlayerMTbl:ResetRoundFlags()
-		if self:IsGhost() then return end
-		self:oldResetRoundFlags()
+		if not self:IsGhost() then
+			self:oldResetRoundFlags()
+		end
 	end
 
 	-- Again, who knows...
 	PlayerMTbl.oldSpectate = PlayerMTbl.Spectate
 	function PlayerMTbl:Spectate(mode)
-		if self:IsGhost() then return end
-		return self:oldSpectate(mode)
+		if not self:IsGhost() then
+			return self:oldSpectate(mode)
+		end
 	end
 
 	-- Prevent players from getting items when spawning as a ghost.
 	GAMEMODE.oldGiveLoadout = GAMEMODE.PlayerLoadout
 	function GAMEMODE:PlayerLoadout(plr)
-		if plr:IsGhost() then return end
-		self:oldGiveLoadout(plr)
+		if not plr:IsGhost() then
+			self:oldGiveLoadout(plr)
+		end
 	end
 
 	KARMA.oldHurt = KARMA.Hurt
