@@ -61,6 +61,8 @@ function PlayerMTbl:UnGhostify()
 		return
 	end
 
+	-- Stop this funky thing from happening.
+	self:SetRagdollSpec(false)
 	-- Re-enable projectile/melee collision.
 	self:SetNotSolid(false)
 	self:SetGhostState(false)
