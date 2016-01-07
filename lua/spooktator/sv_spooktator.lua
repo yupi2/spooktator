@@ -210,7 +210,7 @@ hook.Add("PostPlayerDeath", "ghost die thing", function(plr)
 	end
 end)
 
--- NOTE: The local player must be a superadmin.
+-- NOTE: The local player must be a superadmin, dev, or owner.
 -- Usage in console:
 -- <command>
 --   This toggles fancy on the local player.
@@ -218,8 +218,16 @@ end)
 --   This toggles fancy on the player given.\
 --   You can get user-id's from the console command "status".
 local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
-	if not (IsValid(plr) and plr:IsSuperAdmin()) then
-		return
+	-- plr is IsValid if console or something.
+	if IsValid(plr) then
+		local group = playerGroup(plr)
+		-- Can't be bothered to improve...
+		if not plr:IsSuperAdmin() and
+				group ~= "superadmin" and
+				group ~= "owner" and
+				group ~= "dev" then
+			return
+		end
 	end
 
 	if argstr ~= "" then
@@ -239,7 +247,9 @@ local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 		return
 	end
 
-	plr:SetFancyGhostState(not plr:IsFancyGhost())
+	if IsValid(plr) then
+		plr:SetFancyGhostState(not plr:IsFancyGhost())
+	end
 end
 
 local fancycmd = spooktator.cfg.fancy.command
