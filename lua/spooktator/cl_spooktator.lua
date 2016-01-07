@@ -180,11 +180,11 @@ hook.Add("Initialize", "Initialize cuk", function()
 		local trace = LocalPlayer():GetEyeTrace(MASK_SHOT)
 		local ent = trace.Entity
 
-		-- Check if the targeted player is in TEAM_SPEC.
+		-- Check if the targeted player is in spectator-mode.
 		-- If so then we'll call DrawPropSpecLabels so they'll show without
 		--  having to call the rest of the HUDDrawTargetID function.
 		if not (IsValid(ent) and ent:IsPlayer())
-				or (ent:Team() == TEAM_SPEC) then
+				or ent:IsSpec() then
 			DrawPropSpecLabels(LocalPlayer())
 			return
 		end

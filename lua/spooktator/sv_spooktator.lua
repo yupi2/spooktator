@@ -194,7 +194,7 @@ end)
 -- Only players on the terrorist team can suicide so we don't
 --  have to do anything here to prevent it.
 hook.Add("CanPlayerSuicide", "Toggle ghost on kill-bind", function(plr)
-	if plr:Team() == TEAM_SPEC and ghostsAreAllowed() then
+	if plr:IsSpec() and ghostsAreAllowed() then
 		plr:ToggleGhost()
 	end
 end)
@@ -411,6 +411,11 @@ hook.Add("Initialize", "player death things", function()
 		if attacker:IsGhost() or victim:IsGhost() then return end
 		return KARMA.oldHurt(attacker, victim, dmginfo)
 	end
+
+	-- PROPSPEC.oldTarget = PROPSPEC.Target
+	-- function PROPSPEC.Target(plr, ent)
+
+	-- end
 end)
 
 -- too many damn scripts override this function on Initialize
