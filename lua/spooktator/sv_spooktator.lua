@@ -1,7 +1,3 @@
-util.AddNetworkString("GhostStateUpdateSingle")
-util.AddNetworkString("GhostStateUpdateBatch")
-util.AddNetworkString("GhostStateUpdateBatchRequest")
-
 local clamp = math.Clamp
 
 local PlayerMTbl = FindMetaTable("Player")
@@ -124,7 +120,7 @@ local function GhostStateUpdateBatch(messageTarget)
 	local plrs = player.GetAll()
 
 	net.Start("GhostStateUpdateBatch")
-	net.WriteUInt(count, #plrs)
+	net.WriteUInt(#plrs, 8)
 
 	for k,v in ipairs(plrs) do
 		net.WriteEntity(v)
@@ -298,7 +294,7 @@ local deathbadgehook
 local function dbhReplacement(vic, att, dmg)
 	if not vic.diedAsGhost then
 		deathbadgehook(vic, att, dmg)
-	emd
+	end
 end
 
 local killcamhook

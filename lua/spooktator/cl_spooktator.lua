@@ -195,11 +195,9 @@ hook.Add("Initialize", "Initialize cuk", function()
 	-- Disable the +duck bind unfocusing the cursor when a ghost.
 	GAMEMODE.oldPlayerBindPress = GAMEMODE.PlayerBindPress
 	function GAMEMODE:PlayerBindPress(ply, bind, pressed)
-		if IsValid(ply) and ply:IsGhost() and bind == "+duck" then
-			return true
+		if IsValid(ply) and not (ply:IsGhost() and bind == "+duck") then
+			return self:oldPlayerBindPress(ply, bind, pressed)
 		end
-
-		return self:oldPlayerBindPress(ply, bind, pressed)
 	end
 
 	-- Have a player's status on the scoreboard not be affected by their
