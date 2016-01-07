@@ -219,7 +219,9 @@ hook.Add("PostPlayerDeath", "ghost die thing", function(plr)
 
 	if ghostsAreAllowed() and shouldSpawnAsGhost(plr) then
 		--plr:CreateRagdoll()
-		plr:Ghostify()
+		timer.Simple(.3, function()
+			plr:Ghostify()
+		end)
 	end
 end)
 
