@@ -106,11 +106,11 @@ hook.Add("Think", "Ghost view 2 or something", function()
 		Draw the ghosts.
 	]]
 
-	if ((lp:Team() == TEAM_TERROR) and (GetRoundState() ~= ROUND_POST)) or
+	if lp:IsTerror() and (GetRoundState() ~= ROUND_POST) or
 			(seeghosts:GetInt() ~= 1) then
 		for k,v in ipairs(plrs) do
 			if v ~= lp then
-				PlayerShouldBeDrawn(v, (v:Team() == TEAM_TERROR))
+				PlayerShouldBeDrawn(v, v:IsTerror())
 			end
 		end
 	else
