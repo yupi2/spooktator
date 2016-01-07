@@ -43,11 +43,17 @@ function PlayerMTbl:Ghostify()
 		return
 	end
 
+	local pos = self:GetPos()
+	local ang = self:GetAngles()
+
 	self:SetRagdollSpec(false)
 	self:SetGhostState(true)
 	self:Spawn()
 	-- Have projectiles and melee pass through.
 	self:SetNotSolid(true)
+
+	self:SetPos(pos)
+	self:SetAngles(ang)
 end
 
 function PlayerMTbl:UnGhostify()
@@ -154,6 +160,12 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 
 		-- Clear this flag.
 		v.diedAsGhost = nil
+		-- Flag set when a player is spectating a prop from ghost.
+		v.propGhostFlagThing = nil
+		-- Clear this prop ghost position thing.
+		v.propGhostPosThing = nil
+		-- Clear this heavenly prop ghost angel thing.
+		v.propGhostAngThing = nil
 	end
 
 	GhostStateUpdateBatch(nil)
@@ -412,10 +424,40 @@ hook.Add("Initialize", "player death things", function()
 		return KARMA.oldHurt(attacker, victim, dmginfo)
 	end
 
-	-- PROPSPEC.oldTarget = PROPSPEC.Target
-	-- function PROPSPEC.Target(plr, ent)
+	PROPSPEC.oldTarget = PROPSPEC.Target
+	function PROPSPEC.Target(plr, ent)
+		if IsValid(plr) and plr:IsGhost() then
+			plr.propGhostFlagThing = true
+			plr:UnGhostify()
+		end
+		return PROPSPEC.oldTarget(plr, ent)
+	end
 
-	-- end
+	PROPSPEC.oldEnd = PROPSPEC.End
+	function PROPSPEC.End(plr)
+		if plr.propGhostFlagThing then
+			plr.propGhostPosThing = plr:GetPos()
+			plr.propGhostAngThing = plr:GetAngles()
+		end
+
+		PROPSPEC.Clear(plr)
+		plr:Spectate(OBS_MODE_ROAMING)
+		plr:ResetViewRoll()
+
+		timer.Simple(0.1, function()
+			if IsValid(plr) then
+				plr:ResetViewRoll()
+				if plr.propGhostFlagThing then
+					plr:Ghostify()
+					plr:SetPos(plr.propGhostPosThing)
+					plr:SetAngles(plr.propGhostAngThing)
+					plr.propGhostFlagThing = nil
+					plr.propGhostPosThing = nil
+					plr.propGhostAngThing = nil
+				end
+			end
+		end)
+	end
 end)
 
 -- too many damn scripts override this function on Initialize
