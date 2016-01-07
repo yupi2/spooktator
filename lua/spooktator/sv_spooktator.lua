@@ -9,9 +9,9 @@ end
 
 local function shouldSpawnAsGhost(plr)
 	-- This flag is checked to see if plr is toggling out of ghost-mode.
-	if plr.diedAsGhost then
-		return false
-	end
+	-- if plr.diedAsGhost then
+	-- 	return false
+	-- end
 
 	if not spooktator.cfg.spawn_as_ghost then
 		return false
@@ -39,7 +39,7 @@ function PlayerMTbl:SetFancyGhostState(boolean)
 end
 
 function PlayerMTbl:Ghostify()
-	if self:IsGhost() then
+	if self:IsGhost() or not ghostsAreAllowed() or (not self:IsSpec()) then
 		return
 	end
 
@@ -161,11 +161,9 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 		-- Clear this flag.
 		v.diedAsGhost = nil
 		-- Flag set when a player is spectating a prop from ghost.
-		v.propGhostFlagThing = nil
-		-- Clear this prop ghost position thing.
-		v.propGhostPosThing = nil
-		-- Clear this heavenly prop ghost angel thing.
-		v.propGhostAngThing = nil
+		v.propGhostFlag = nil
+		-- Clear this table with position and angles and shit.
+		v.propGhost = nil
 	end
 
 	GhostStateUpdateBatch(nil)
@@ -218,6 +216,7 @@ hook.Add("PostPlayerDeath", "ghost die thing", function(plr)
 	end
 
 	if ghostsAreAllowed() and shouldSpawnAsGhost(plr) then
+		--plr:CreateRagdoll()
 		plr:Ghostify()
 	end
 end)
@@ -330,7 +329,7 @@ end
 
 local killcamhook
 local function kchReplacement(vic, att, dmg)
-	if not shouldSpawnAsGhost(plr) then
+	if not vic.diedAsGhost or not shouldSpawnAsGhost(plr) then
 		killcamhook(vic, att, dmg)
 	end
 end
@@ -427,7 +426,7 @@ hook.Add("Initialize", "player death things", function()
 	PROPSPEC.oldTarget = PROPSPEC.Target
 	function PROPSPEC.Target(plr, ent)
 		if IsValid(plr) and plr:IsGhost() then
-			plr.propGhostFlagThing = true
+			plr.propGhostFlag = true
 			plr:UnGhostify()
 		end
 		return PROPSPEC.oldTarget(plr, ent)
@@ -435,9 +434,10 @@ hook.Add("Initialize", "player death things", function()
 
 	PROPSPEC.oldEnd = PROPSPEC.End
 	function PROPSPEC.End(plr)
-		if plr.propGhostFlagThing then
-			plr.propGhostPosThing = plr:GetPos()
-			plr.propGhostAngThing = plr:GetAngles()
+		if plr.propGhostFlag then
+			plr.propGhost = {}
+			plr.propGhost.pos = plr:GetPos()
+			plr.propGhost.ang = plr:GetAngles()
 		end
 
 		PROPSPEC.Clear(plr)
@@ -447,13 +447,12 @@ hook.Add("Initialize", "player death things", function()
 		timer.Simple(0.1, function()
 			if IsValid(plr) then
 				plr:ResetViewRoll()
-				if plr.propGhostFlagThing then
+				if plr.propGhostFlag then
 					plr:Ghostify()
-					plr:SetPos(plr.propGhostPosThing)
-					plr:SetAngles(plr.propGhostAngThing)
-					plr.propGhostFlagThing = nil
-					plr.propGhostPosThing = nil
-					plr.propGhostAngThing = nil
+					plr:SetPos(plr.propGhost.pos)
+					plr:SetAngles(plr.propGhost.ang)
+					plr.propGhostFlag = nil
+					plr.propGhost = nil
 				end
 			end
 		end)
