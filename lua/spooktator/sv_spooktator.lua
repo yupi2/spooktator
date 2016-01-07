@@ -218,8 +218,9 @@ end)
 --   This toggles fancy on the player given.\
 --   You can get user-id's from the console command "status".
 local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
+	local isRcon = not IsValid(plr)
 	-- plr is IsValid if console or something.
-	if IsValid(plr) then
+	if not isRcon then
 		local group = playerGroup(plr)
 		-- Can't be bothered to improve...
 		if not plr:IsSuperAdmin() and
@@ -233,13 +234,21 @@ local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 	if argstr ~= "" then
 		local userid = tonumber(argstr)
 		if userid == nil then
-			plr:PrintMessage(HUD_PRINTTALK, "Invalid user-id")
+			if isRcon then
+				print("Invalid user-id")
+			else
+				plr:PrintMessage(HUD_PRINTTALK, "Invalid user-id")
+			end
 			return
 		end
 
 		local tgt = Player(userid)
 		if not (IsValid(tgt) and tgt:IsPlayer()) then
-			plr:PrintMessage(HUD_PRINTTALK, "Invalid player")
+			if isRcon then
+				print("Invalid player")
+			else
+				plr:PrintMessage(HUD_PRINTTALK, "Invalid player")
+			end
 			return
 		end
 
@@ -247,7 +256,7 @@ local function PlayerFancyGhostCommand(plr, cmd, argtbl, argstr)
 		return
 	end
 
-	if IsValid(plr) then
+	if not isRcon then
 		plr:SetFancyGhostState(not plr:IsFancyGhost())
 	end
 end
