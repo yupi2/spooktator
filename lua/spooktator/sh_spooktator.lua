@@ -49,8 +49,8 @@ hook.Add("ShouldCollide", "Ghost collide", function(ent1, ent2)
 		return
 	end
 
-	if (ent1.Team and ent1:Team() == TEAM_SPEC) or
-			(ent2.Team and ent2:Team() == TEAM_SPEC) then
+	if (ent1.IsSpec and ent1:IsSpec()) or
+			(ent2.IsSpec and ent2:IsSpec()) then
 		return false
 	end
 end)
