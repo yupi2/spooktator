@@ -141,7 +141,7 @@ end
 net.Receive("GhostStateUpdateBatchRequest", function(size, plr)
 	if IsValid(plr) then
 		GhostStateUpdateBatch(plr)
-		plr:SetFancyGhostState(PlayerWillBeFancy(plr))
+		plr:SetFancyGhostState(willPlayerBeFancy(plr))
 	end
 end)
 
@@ -332,8 +332,15 @@ end
 
 local killcamhook
 local function kchReplacement(vic, att, dmg)
-	if not vic.diedAsGhost or not shouldSpawnAsGhost(plr) then
+	if not vic.diedAsGhost or not shouldSpawnAsGhost(vic) then
 		killcamhook(vic, att, dmg)
+	end
+end
+
+local dmglogshit
+local function dlgReplacement(vic, infl, att)
+	if not vic:IsGhost() and not vic.diedAsGhost then
+		dmglogshit(vic, infl, att)
 	end
 end
 
@@ -459,6 +466,15 @@ hook.Add("Initialize", "player death things", function()
 				end
 			end
 		end)
+	end
+
+	local pd = hook.GetTable()["PlayerDeath"]
+	if pd then
+		dmglogshit = pd["Damagelog_PlayerDeathLastLogs"]
+		if dmglogshit then
+			hook.Add("PlayerDeath", "Damagelog_PlayerDeathLastLogs",
+				dlgReplacement)
+		end
 	end
 end)
 
