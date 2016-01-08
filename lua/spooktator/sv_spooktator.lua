@@ -43,18 +43,11 @@ function PlayerMTbl:Ghostify()
 		return
 	end
 
-	-- Subtract some units on the z-axis to move out of ceiling.
-	local pos = self:GetPos() - Vector(0, 0, 16)
-	local ang = self:GetAngles()
-
 	self:SetRagdollSpec(false)
 	self:SetGhostState(true)
 	self:Spawn()
 	-- Have projectiles and melee pass through.
 	self:SetNotSolid(true)
-
-	self:SetPos(pos)
-	self:SetAngles(ang)
 end
 
 function PlayerMTbl:UnGhostify()
@@ -220,8 +213,13 @@ hook.Add("PostPlayerDeath", "ghost die thing", function(plr)
 
 	if ghostsAreAllowed() and shouldSpawnAsGhost(plr) then
 		--plr:CreateRagdoll()
+		-- Subtract some units on the z-axis to move out of ceiling.
+		local pos = plr:GetPos() - Vector(0, 0, 16)
+		local ang = plr:GetAngles()
 		timer.Simple(.3, function()
 			plr:Ghostify()
+			plr:SetPos(pos)
+			plr:SetAngles(ang)
 		end)
 	end
 end)
