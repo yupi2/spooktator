@@ -43,7 +43,8 @@ function PlayerMTbl:Ghostify()
 		return
 	end
 
-	local pos = self:GetPos()
+	-- Subtract some units on the z-axis to move out of ceiling.
+	local pos = self:GetPos() - Vector(0, 0, 16)
 	local ang = self:GetAngles()
 
 	self:SetRagdollSpec(false)
