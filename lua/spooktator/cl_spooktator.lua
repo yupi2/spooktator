@@ -132,66 +132,7 @@ hook.Add("CalcView", "Ghost bob", function(plr, pos, ang, fov)
 	end
 end)
 
--- This function is duplicated from the TTT core gamemode files. In the core
---  files, this function is not a global function so we can't call it.
-local function DrawPropSpecLabels(client)
-	if (not client:IsSpec()) and (GetRoundState() ~= ROUND_POST) then
-		return
-	end
-
-	surface.SetFont("TabLarge")
-
-	local tgt = nil
-	local scrpos = nil
-	local text = nil
-	local w = 0
-
-	for _, ply in pairs(player.GetAll()) do
-		if ply:IsSpec() then
-			surface.SetTextColor(220,200,0,120)
-			tgt = ply:GetObserverTarget()
-			if IsValid(tgt) and tgt:GetNWEntity("spec_owner", nil) == ply then
-				scrpos = tgt:GetPos():ToScreen()
-			else
-				scrpos = nil
-			end
-		else
-			local _, healthcolor = util.HealthToString(ply:Health())
-			surface.SetTextColor(clr(healthcolor))
-
-			scrpos = ply:EyePos()
-			scrpos.z = scrpos.z + 20
-			scrpos = scrpos:ToScreen()
-		end
-
-		if scrpos and (not IsOffScreen(scrpos)) then
-			text = ply:Nick()
-			w, _ = surface.GetTextSize(text)
-			surface.SetTextPos(scrpos.x - w / 2, scrpos.y)
-			surface.DrawText(text)
-		end
-	end
-end
-
 hook.Add("Initialize", "Initialize cuk", function()
-	-- Hide HUD thing when your crosshair is over a ghost and you're alive.
-	GAMEMODE.oldHUDDrawTargetID = GAMEMODE.HUDDrawTargetID
-	function GAMEMODE:HUDDrawTargetID()
-		local trace = LocalPlayer():GetEyeTrace(MASK_SHOT)
-		local ent = trace.Entity
-
-		-- Check if the targeted player is in spectator-mode.
-		-- If so then we'll call DrawPropSpecLabels so they'll show without
-		--  having to call the rest of the HUDDrawTargetID function.
-		if not (IsValid(ent) and ent:IsPlayer())
-				or ent:IsSpec() then
-			DrawPropSpecLabels(LocalPlayer())
-			return
-		end
-
-		self:oldHUDDrawTargetID()
-	end
-
 	-- Disable the +duck bind unfocusing the cursor when a ghost.
 	GAMEMODE.oldPlayerBindPress = GAMEMODE.PlayerBindPress
 	function GAMEMODE:PlayerBindPress(ply, bind, pressed)
