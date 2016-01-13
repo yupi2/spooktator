@@ -160,6 +160,8 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 		v.propGhostFlag = nil
 		-- Clear this table with position and angles and shit.
 		v.propGhost = nil
+
+		v.didThing = nil
 	end
 
 	GhostStateUpdateBatch(nil)
@@ -209,6 +211,16 @@ hook.Add("PostPlayerDeath", "ghost die thing", function(plr)
 	if plr.diedAsGhost then
 		plr.diedAsGhost = nil
 		return
+	end
+
+	if not plr.didThing then
+		for k,v in pairs(ents.FindByClass("npc_*")) do
+			if v.AddEntityRelationship then
+				v:AddEntityRelationship(plr, D_NU, 99)
+			end
+		end
+
+		plr.didThing = true
 	end
 
 	if ghostsAreAllowed() and shouldSpawnAsGhost(plr) then
@@ -474,6 +486,18 @@ hook.Add("Initialize", "player death things", function()
 		if dmglogshit then
 			hook.Add("PlayerDeath", "Damagelog_PlayerDeathLastLogs",
 				dlgReplacement)
+		end
+	end
+end)
+
+hook.Add("OnEntityCreated", "OnEntityCreated_Ghost", function(ent)
+	if not (SERVER and ent:IsNPC()) then
+		return
+	end
+
+	for k,v in pairs(player.GetAll()) do
+		if v:IsGhost() then
+			ent:AddEntityRelationship(v, D_NU, 99)
 		end
 	end
 end)
