@@ -166,7 +166,7 @@ hook.Add("TTTDelayRoundStartForVote", "make everyone nots ghosties", function()
 		--  to get fucky. The flag indicates if the player has a neutral
 		--  relationship with npcs. It's useful for shit so shit doesn't
 		--  fly around and attack ghosts and shit.
-		v.npcNeutral = nil
+		v.isNPCNeutral = nil
 	end
 
 	GhostStateUpdateBatch(nil)
@@ -218,14 +218,14 @@ hook.Add("PostPlayerDeath", "ghost die thing", function(plr)
 		return
 	end
 
-	if not plr.npcNeutral then
+	if not plr.isNPCNeutral then
 		for k,v in pairs(ents.FindByClass("npc_*")) do
 			if v.AddEntityRelationship then
 				v:AddEntityRelationship(plr, D_NU, 99)
 			end
 		end
 
-		plr.npcNeutral = true
+		plr.isNPCNeutral = true
 	end
 
 	if ghostsAreAllowed() and shouldSpawnAsGhost(plr) then
