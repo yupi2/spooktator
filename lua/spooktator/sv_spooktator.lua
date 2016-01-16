@@ -357,7 +357,7 @@ end
 local dmglogshit
 local function dlgReplacement(vic, att, dmg)
 	if not vic.diedAsGhost then
-		dmglogshit(vic)
+		dmglogshit(vic, att, dmg)
 	end
 end
 
