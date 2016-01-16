@@ -369,13 +369,15 @@ hook.Add("Initialize", "player death things", function()
 		-- the deathbadge thing shows death info (dmg, attacker, etc)
 		-- we don't want this if some ghost death things happened
 		deathbadgehook = dpd["DMSG.SV"]
-		if deathbadgehook then
-			hook.Add("DoPlayerDeath", "DMSG.SV", dbhReplacement)
-		end
 
 		-- the killcam thing aims the camera at the killer
 		-- we don't want this if some ghost death things happened
 		killcamhook = dpd["WKC_SendKillCamData"]
+
+		if deathbadgehook then
+			hook.Add("DoPlayerDeath", "DMSG.SV", dbhReplacement)
+		end
+
 		if killcamhook then
 			hook.Add("DoPlayerDeath", "WKC_SendKillCamData", kchReplacement)
 		end
