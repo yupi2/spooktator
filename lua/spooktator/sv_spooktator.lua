@@ -55,8 +55,6 @@ function PlayerMTbl:UnGhostify()
 		return
 	end
 
-	-- Stop this funky thing from happening.
-	self:SetRagdollSpec(false)
 	-- Re-enable projectile/melee collision.
 	self:SetNotSolid(false)
 	self:SetGhostState(false)
@@ -64,6 +62,9 @@ function PlayerMTbl:UnGhostify()
 	-- respawn ghosts or do any silly killcam/deathbadge stuff.
 	self.diedAsGhost = true
 	self:Kill()
+
+	-- Stop this fucking thing from happening.
+	self:SetRagdollSpec(false)
 end
 
 function PlayerMTbl:ToggleGhost()
