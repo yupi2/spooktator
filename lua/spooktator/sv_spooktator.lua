@@ -355,9 +355,9 @@ local function kchReplacement(vic, att, dmg)
 end
 
 local dmglogshit
-local function dlgReplacement(vic, infl, att)
-	if not vic:IsGhost() and not vic.diedAsGhost then
-		dmglogshit(vic, infl, att)
+local function dlgReplacement(vic, att, dmg)
+	if not vic.diedAsGhost then
+		dmglogshit(vic)
 	end
 end
 
@@ -374,12 +374,21 @@ hook.Add("Initialize", "player death things", function()
 		-- we don't want this if some ghost death things happened
 		killcamhook = dpd["WKC_SendKillCamData"]
 
+		-- the stupid fucking damagelogs are logging deaths when ghosties
+		--  unghost because it kills thems to go back to normal spec
+		dmglogshit = dpd["Damagelog_events_DoPlayerDeath"]
+
 		if deathbadgehook then
 			hook.Add("DoPlayerDeath", "DMSG.SV", dbhReplacement)
 		end
 
 		if killcamhook then
 			hook.Add("DoPlayerDeath", "WKC_SendKillCamData", kchReplacement)
+		end
+
+		if dmglogshit then
+			hook.Add("DoPlayerDeath", "Damagelog_events_DoPlayerDeath",
+				dlgReplacement)
 		end
 	end
 
@@ -485,15 +494,6 @@ hook.Add("Initialize", "player death things", function()
 				end
 			end
 		end)
-	end
-
-	local pd = hook.GetTable()["PlayerDeath"]
-	if pd then
-		dmglogshit = pd["Damagelog_PlayerDeathLastLogs"]
-		if dmglogshit then
-			hook.Add("PlayerDeath", "Damagelog_PlayerDeathLastLogs",
-				dlgReplacement)
-		end
 	end
 end)
 
