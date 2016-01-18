@@ -34,13 +34,7 @@ function PlayerMTbl:AnimateGhost(vel)
 	end
 
 	if CLIENT then
-		--if self.PiggyWiggle then
-		--	self:AnimRestartGesture(GESTURE_SLOT_JUMP,
-		--		ACT_GESTURE_RANGE_ATTACK1)
-		--else
-			self:AnimRestartGesture(GESTURE_SLOT_JUMP,
-				ACT_GESTURE_MELEE_ATTACK2)
-		--end
+		self:AnimRestartGesture(GESTURE_SLOT_JUMP, ACT_GESTURE_MELEE_ATTACK2)
 	end
 
 	self.CalcSeqOverride = seq
@@ -66,7 +60,7 @@ hook.Add("UpdateAnimation", "ghost animations", function(plr, vel, maxSeqGroundS
 	local estyaw = math.Clamp(math.atan2(vel.y, vel.x) * 180 / math.pi, -180, 180)
 	local myaw = math.NormalizeAngle(math.NormalizeAngle(eye.y) - estyaw)
 
-	// set the move_yaw (because it's not an hl2mp model)
+	-- set the move_yaw (because it's not an hl2mp model)
 	plr:SetPoseParameter("move_yaw", -myaw)
 
 	local len2d = vel:Length2D()
@@ -84,14 +78,14 @@ hook.Add("UpdateAnimation", "ghost animations", function(plr, vel, maxSeqGroundS
 		plr.SmoothBodyAngles = math.ApproachAngle(plr.SmoothBodyAngles, eye.y, 5)
 		local y = plr.SmoothBodyAngles
 
-		// correct player angles
+		-- correct player angles
 		plr:SetLocalAngles(Angle(0, y, 0))
 
 		if CLIENT then
-			// set rendering angles for zombie
+			-- set rendering angles for zombie
 
 			local rang = plr:GetRenderAngles()
-			//local diff = (math.abs(eye.y) - math.abs(rang.y))
+			--local diff = (math.abs(eye.y) - math.abs(rang.y))
 
 			if len2d <= 0 then
 				local num = 65
@@ -110,7 +104,11 @@ hook.Add("UpdateAnimation", "ghost animations", function(plr, vel, maxSeqGroundS
 			local diff = math.abs(math.AngleDifference(eye.y, rang.y))
 			local num = (diff * .12)
 			plr.SmoothBodyAnglesCL = plr.SmoothBodyAnglesCL or eye.y
-			plr.SmoothBodyAnglesCL = math.ApproachAngle(plr.SmoothBodyAnglesCL, eye.y, 65) -- Used to be plr.SmoothBodyAnglesCL = math.ApproachAngle(plr.SmoothBodyAnglesCL, eye.y, num) Look here to fix animations!!!
+
+			-- Used to be plr.SmoothBodyAnglesCL = math.ApproachAngle(plr.SmoothBodyAnglesCL, eye.y, num)
+			-- Look here to fix animations!!!
+			plr.SmoothBodyAnglesCL = math.ApproachAngle(plr.SmoothBodyAnglesCL, eye.y, 65)
+
 			plr:SetRenderAngles(Angle(0, plr.SmoothBodyAnglesCL, 0))
 		end
 	end
