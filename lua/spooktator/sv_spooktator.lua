@@ -530,6 +530,7 @@ end)
 local sounds_to_block = {
 	"player/footsteps/wade",
 	"player/footsteps/slosh",
+	"player/footsteps/ladder",
 }
 
 hook.Add("EntityEmitSound", "Block sounds spawned from ghosts", function(tbl)
