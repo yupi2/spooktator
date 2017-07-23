@@ -61,7 +61,9 @@ function PlayerMTbl:UnGhostify()
 	-- This flag is set so hooks called on a player's death won't
 	-- respawn ghosts or do any silly killcam/deathbadge stuff.
 	self.diedAsGhost = true
-	self:Kill()
+	--self:Kill()
+	-- This is apparently an exploit if self:Kill() is used - thx Kalka
+	self:KillSilent()
 
 	-- Stop this fucking thing from happening.
 	self:SetRagdollSpec(false)
