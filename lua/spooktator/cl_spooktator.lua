@@ -1,5 +1,6 @@
 local spawnasghost = CreateClientConVar("spawnasghost", "1", true, true)
 local seeghosts = CreateClientConVar("seeghosts", "1", true, true)
+local spawnonbodyasghost = CreateClientConVar("spawnonbodyasghost", "0", true, true)
 
 hook.Add("TTTSettingsTabs", "Ghost settings menu", function(dtabs)
 	local dsettings = dtabs.Items[2].Panel
@@ -12,6 +13,7 @@ hook.Add("TTTSettingsTabs", "Ghost settings menu", function(dtabs)
 
 	dgui:CheckBox("Auto spawn as ghost when dead", "spawnasghost")
 	dgui:CheckBox("See other ghosts", "seeghosts")
+	dgui:CheckBox("Do you want to spawn on your body, BRO?!", "spawnonbodyasghost")
 	dsettings:AddItem(dgui)
 
 	if tttCustomSettings then

@@ -237,8 +237,10 @@ hook.Add("PostPlayerDeath", "ghost die thing", function(plr)
 		local ang = plr:GetAngles()
 		timer.Simple(.3, function()
 			plr:Ghostify()
-			plr:SetPos(pos)
-			plr:SetAngles(ang)
+			if plr:GetInfoNum("spawnonbodyasghost", 0) ~= 0 then
+				plr:SetPos(pos)
+				plr:SetAngles(ang)
+			end
 		end)
 	end
 end)
@@ -342,21 +344,21 @@ hook.Add("PlayerSay", "Ghost toggle", function(plr, text, isteam)
 	end
 end)
 
-local deathbadgehook
+deathbadgehook = deathbadgehook
 local function dbhReplacement(vic, att, dmg)
 	if not vic.diedAsGhost then
 		deathbadgehook(vic, att, dmg)
 	end
 end
 
-local killcamhook
+killcamhook = killcamhook
 local function kchReplacement(vic, att, dmg)
 	if not vic.diedAsGhost or not shouldSpawnAsGhost(vic) then
 		killcamhook(vic, att, dmg)
 	end
 end
 
-local dmglogshit
+dmglogshit = dmglogshit
 local function dlgReplacement(vic, att, dmg)
 	if not vic.diedAsGhost then
 		dmglogshit(vic, att, dmg)
@@ -514,21 +516,23 @@ end)
 -- too many damn scripts override this function on Initialize
 -- so I had the idea of putting this here
 hook.Add("TTTBeginRound", "TTTBeginRound_Ghost", function()
-	oldHasteMode = HasteMode
-	GAMEMODE.oldPlayerDeath = GAMEMODE.PlayerDeath
-	function GAMEMODE:PlayerDeath(plr, infl, attacker)
-		if plr:IsGhost() then
-			HasteMode = function()
-				return false
+	if not oldHasteMode then
+		oldHasteMode = HasteMode
+		GAMEMODE.oldPlayerDeath = GAMEMODE.PlayerDeath
+		function GAMEMODE:PlayerDeath(plr, infl, attacker)
+			if plr:IsGhost() or plr.diedAsGhost then
+				HasteMode = function()
+					return false
+				end
 			end
+			self:oldPlayerDeath(plr, infl, attacker)
+			HasteMode = oldHasteMode
 		end
-		self:oldPlayerDeath(plr, infl, attacker)
-		HasteMode = oldHasteMode
 	end
 	hook.Remove("TTTBeginRound", "TTTBeginRound_Ghost")
 end)
 
--- The only sounds I know of to block are water sounds.
+-- The only sounds I know of to block are water sounds and the ladder.
 local sounds_to_block = {
 	"player/footsteps/wade",
 	"player/footsteps/slosh",

@@ -31,7 +31,7 @@ spooktator.cfg.commands = {
 -- DEFAULT VALUE: 5
 spooktator.cfg.fancy.chance = 5
 
--- Give players (by SteamID) a different fancy-chance that the default.
+-- Give players (by SteamID) a different fancy-chance than the default.
 spooktator.cfg.fancy.player_chance = {
 	["STEAMID1"] = 100,
 	["STEAMID2"] = 0,
@@ -41,9 +41,17 @@ spooktator.cfg.fancy.player_chance = {
 -- Give players in a group a different fancy-chance than the default.
 spooktator.cfg.fancy.group_chance = {
 	["owner"] = 100,
-	--["dev"] = 69,
-	--["superadmin"] = 69,
-	--["donor"] = 20,
+	["dev"] = 69,
+	["superadmin"] = 69,
+	["executive"] = 69,
+	["admin"] = 40,
+	["mod"] = 30,
+	["purpleheart"] = 40,
+	["veteran"] = 30,
+	["extravagant"] = 40,
+	["supporter"] = 30,	
+	["donor"] = 20,
+	["exceptional"] = 10,
 }
 
 -- Command for superadmins to toggle fanciness on themself or others.
