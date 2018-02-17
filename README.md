@@ -1,6 +1,6 @@
 GMOD TTT addon to allow a player to fly around as a ghost when they die.
 
-
+you can get the ghost model & textures from http://steamcommunity.com/sharedfiles/filedetails/?id=385438672
 
 A **FINISHED** (!!!!!!!) combination of the ghosts from
 
